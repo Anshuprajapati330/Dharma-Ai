@@ -1,0 +1,41 @@
+[
+{"source":"Kantian Ethics","philosopher":"Immanuel Kant","concept":"Categorical Imperative","summary":"Act only according to maxims that you would will to become universal law.","ethical_principle":"Duty-based morality independent of consequences.","theme":["duty","universal law"],"modern_context":["AI fairness","professional ethics"]},
+
+{"source":"Kantian Ethics","philosopher":"Immanuel Kant","concept":"Humanity Principle","summary":"Treat humanity always as an end, never merely as a means.","ethical_principle":"Respect human dignity.","theme":["respect","rights"],"modern_context":["data privacy","workplace respect"]},
+
+{"source":"Utilitarianism","philosopher":"John Stuart Mill","concept":"Greatest Happiness Principle","summary":"Actions are right if they promote the greatest happiness for the greatest number.","ethical_principle":"Maximize overall well-being.","theme":["consequences","utility"],"modern_context":["public policy","resource allocation"]},
+
+{"source":"Utilitarianism","philosopher":"Jeremy Bentham","concept":"Hedonic Calculus","summary":"Measure moral decisions based on pleasure vs pain.","ethical_principle":"Quantify happiness outcomes.","theme":["pleasure","measurement"],"modern_context":["cost-benefit analysis"]},
+
+{"source":"Virtue Ethics","philosopher":"Aristotle","concept":"Golden Mean","summary":"Virtue lies between extremes of excess and deficiency.","ethical_principle":"Balance character traits.","theme":["balance","character"],"modern_context":["leadership balance"]},
+
+{"source":"Virtue Ethics","philosopher":"Aristotle","concept":"Eudaimonia","summary":"True happiness comes from living virtuously.","ethical_principle":"Character development over material success.","theme":["flourishing","virtue"],"modern_context":["career growth"]},
+
+{"source":"Social Contract Theory","philosopher":"Thomas Hobbes","concept":"State of Nature","summary":"Without authority, life would be chaotic.","ethical_principle":"Society requires rules for stability.","theme":["order","authority"],"modern_context":["cyber security laws"]},
+
+{"source":"Social Contract Theory","philosopher":"John Locke","concept":"Natural Rights","summary":"Individuals possess inherent rights to life, liberty, and property.","ethical_principle":"Protect fundamental rights.","theme":["rights","freedom"],"modern_context":["constitutional law"]},
+
+{"source":"Justice Theory","philosopher":"John Rawls","concept":"Veil of Ignorance","summary":"Design society as if you do not know your social position.","ethical_principle":"Ensure fairness and equality.","theme":["fairness","justice"],"modern_context":["policy making","AI bias mitigation"]},
+
+{"source":"Justice Theory","philosopher":"John Rawls","concept":"Difference Principle","summary":"Inequalities are acceptable only if they benefit the least advantaged.","ethical_principle":"Prioritize the vulnerable.","theme":["equity","distribution"],"modern_context":["wealth gap policies"]},
+
+{"source":"Existentialism","philosopher":"Jean-Paul Sartre","concept":"Radical Responsibility","summary":"Humans are fully responsible for their choices.","ethical_principle":"Freedom requires accountability.","theme":["freedom","responsibility"],"modern_context":["career decisions"]},
+
+{"source":"Care Ethics","philosopher":"Carol Gilligan","concept":"Ethics of Care","summary":"Moral action emphasizes relationships and empathy.","ethical_principle":"Prioritize care and compassion.","theme":["empathy","relationships"],"modern_context":["healthcare ethics"]},
+
+{"source":"Pragmatism","philosopher":"William James","concept":"Practical Consequences","summary":"Truth is what works in practice.","ethical_principle":"Evaluate ideas by outcomes.","theme":["practicality","results"],"modern_context":["business strategy"]},
+
+{"source":"Stoicism","philosopher":"Epictetus","concept":"Control Dichotomy","summary":"Focus on what you can control, ignore what you cannot.","ethical_principle":"Emotional resilience.","theme":["self-control","resilience"],"modern_context":["exam stress"]},
+
+{"source":"Nietzschean Ethics","philosopher":"Friedrich Nietzsche","concept":"Self-Overcoming","summary":"Create your own values beyond societal norms.","ethical_principle":"Personal authenticity.","theme":["individualism","growth"],"modern_context":["startup culture"]},
+
+{"source":"Feminist Ethics","philosopher":"Simone de Beauvoir","concept":"Moral Equality","summary":"Ethics must challenge oppression and inequality.","ethical_principle":"Gender justice.","theme":["equality","rights"],"modern_context":["workplace inclusion"]},
+
+{"source":"Divine Command Theory","philosopher":"Thomas Aquinas","concept":"Natural Law","summary":"Moral law is derived from divine reason.","ethical_principle":"Align actions with moral order.","theme":["faith","law"],"modern_context":["religious ethics debates"]},
+
+{"source":"Rule Utilitarianism","philosopher":"John Stuart Mill","concept":"Rule-based Utility","summary":"Follow rules that maximize happiness in general.","ethical_principle":"Stability in ethical systems.","theme":["rules","utility"],"modern_context":["organizational policies"]},
+
+{"source":"Libertarianism","philosopher":"Robert Nozick","concept":"Minimal State","summary":"State should interfere minimally with individual rights.","ethical_principle":"Protect liberty.","theme":["freedom","property"],"modern_context":["tax policy"]},
+
+{"source":"Contractualism","philosopher":"T.M. Scanlon","concept":"Reasonable Rejection","summary":"An action is wrong if others could reasonably reject it.","ethical_principle":"Mutual justification.","theme":["reasoning","fairness"],"modern_context":["AI transparency"]}
+]

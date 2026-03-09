@@ -8,3 +8,21 @@
 # print("First verse:", data[0])
 
 
+import chromadb
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+client = chromadb.Client()
+collection = client.get_collection("dharma_ethics")
+
+query = "How to stay calm during success and failure"
+
+embedding = model.encode(query).tolist()
+
+results = collection.query(
+    query_embeddings=[embedding],
+    n_results=3
+)
+
+print(results["documents"])
