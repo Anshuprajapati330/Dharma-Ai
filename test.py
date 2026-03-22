@@ -14,7 +14,7 @@ from sentence_transformers import SentenceTransformer
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 client = chromadb.Client()
-collection = client.get_collection("dharma_ethics")
+collection = client.get_collection("ethics_collection")
 
 query = "How to stay calm during success and failure"
 
