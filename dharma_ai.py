@@ -29,7 +29,7 @@ collection = client.get_or_create_collection(
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ----------------------
-# Query Input
+# Query Input 
 # ----------------------
 
 query = input("\n Ask DharmaAI: ")
