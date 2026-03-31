@@ -62,7 +62,11 @@ def get_mode_prompt(mode):
         return "Respond normally."
 
 # ----------------------
+<<<<<<< HEAD
 # MAIN FUNCTION
+=======
+# Query Input 
+>>>>>>> 4a3ed04e6760f2b5c43e0b29877c74ef4c57577c
 # ----------------------
 
 def generate_response(query, mode="Calm"):
@@ -107,4 +111,16 @@ Answer:
         ]
     )
 
+<<<<<<< HEAD
     return response.choices[0].message.content
+=======
+response = groq_client.chat.completions.create(
+    model="llama-3.1-8b-instant",
+    messages=[
+        {"role": "user", "content": prompt}
+    ]
+)
+
+print("\nDharma AI Says:\n")
+print(response.choices[0].message.content)
+>>>>>>> 4a3ed04e6760f2b5c43e0b29877c74ef4c57577c
