@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+from daily_wisdom import get_daily_wisdom
 
 load_dotenv()
 
@@ -11,8 +12,12 @@ from groq import Groq
 # ChromaDB Setup
 # ----------------------
 
-client = chromadb.Client()
-
+# client = chromadb.Client()
+client = chromadb.Client(
+    settings=chromadb.Settings(
+        persist_directory="./chroma_db"
+    )
+)
 embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name="all-MiniLM-L6-v2"
 )
@@ -22,6 +27,12 @@ collection = client.get_or_create_collection(
     embedding_function=embedding_fn
 )
 
+print("\n🌅 Today's Dharma Wisdom:\n")
+
+daily_wisdom = get_daily_wisdom(collection)
+
+print(daily_wisdom)
+print("\n" + "="*50)
 # ----------------------
 # Groq Setup
 # ----------------------
