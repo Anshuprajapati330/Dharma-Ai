@@ -7,28 +7,19 @@ load_dotenv()
 import chromadb
 from chromadb.utils import embedding_functions
 from groq import Groq
+import streamlit as st
 
 # ----------------------
 # ChromaDB Setup
 # ----------------------
 
-<<<<<<< HEAD
-# client = chromadb.Client()
-client = chromadb.Client(
-    settings=chromadb.Settings(
-        persist_directory="./chroma_db"
-    )
-)
-embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-    model_name="all-MiniLM-L6-v2"
-)
-=======
-import streamlit as st
-
 @st.cache_resource
 def load_chroma():
-    client = chromadb.Client()
->>>>>>> f41c427bc801474fb5ad710aab1f34c938870b2f
+    client = chromadb.Client(
+        settings=chromadb.Settings(
+            persist_directory="./chroma_db"
+        )
+    )
 
     embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name="all-MiniLM-L6-v2"
@@ -41,14 +32,18 @@ def load_chroma():
 
     return collection
 
+
 collection = load_chroma()
 
-print("\n🌅 Today's Dharma Wisdom:\n")
+# print("\n🌅 Today's Dharma Wisdom:\n")
+st.sidebar.markdown("### 🌅 Today's Wisdom")
+st.sidebar.write(get_daily_wisdom(collection))
 
 daily_wisdom = get_daily_wisdom(collection)
 
 print(daily_wisdom)
-print("\n" + "="*50)
+print("\n" + "=" * 50)
+
 # ----------------------
 # Groq Setup
 # ----------------------
@@ -57,39 +52,30 @@ print("\n" + "="*50)
 def load_groq():
     return Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-groq_client = load_groq()
 
+groq_client = load_groq()
 
 
 def get_mode_prompt(mode):
     if mode == "Calm":
         return "Respond in a calm, peaceful, emotionally supportive manner."
-
     elif mode == "Logical":
         return "Respond with logical reasoning and clear step-by-step thinking."
-
     elif mode == "Ethical":
         return "Respond with strong ethical reasoning based on dharma and morality."
-
     elif mode == "Motivational":
         return "Respond in an inspiring, energetic, and uplifting way."
-
     elif mode == "Direct":
         return "Respond briefly, clearly, and directly without extra explanation."
-
     else:
         return "Respond normally."
 
+
 # ----------------------
-<<<<<<< HEAD
 # MAIN FUNCTION
-=======
-# Query Input 
->>>>>>> 4a3ed04e6760f2b5c43e0b29877c74ef4c57577c
 # ----------------------
 
 def generate_response(query, mode="Calm"):
-    import chromadb
     # Retrieve knowledge
     results = collection.query(
         query_texts=[query],
@@ -130,16 +116,4 @@ Answer:
         ]
     )
 
-<<<<<<< HEAD
     return response.choices[0].message.content
-=======
-response = groq_client.chat.completions.create(
-    model="llama-3.1-8b-instant",
-    messages=[
-        {"role": "user", "content": prompt}
-    ]
-)
-
-print("\nDharma AI Says:\n")
-print(response.choices[0].message.content)
->>>>>>> 4a3ed04e6760f2b5c43e0b29877c74ef4c57577c

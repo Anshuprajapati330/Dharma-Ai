@@ -57,6 +57,7 @@ for file in os.listdir(data_folder):
             counter += 1
 
 # Store
+client.persist()
 collection.add(
     documents=documents,
     metadatas=metadatas,

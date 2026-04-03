@@ -1,8 +1,10 @@
 import streamlit as st
 from dharma_ai import generate_response
 from datetime import datetime
-
+from voice_input import speech_to_text
 # Page Config
+with st.spinner("🚀 Loading Dharma-AI... Please wait"):
+    pass
 st.set_page_config(
     page_title="Dharma-AI Chatbot",
     page_icon="🧠",
