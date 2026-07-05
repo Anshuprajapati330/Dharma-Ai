@@ -5,17 +5,13 @@ def speech_to_text():
 
     try:
         with sr.Microphone() as source:
-            print("🎤 Listening... Speak now")
-            audio = recognizer.listen(source, timeout=5)
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            print("Listening...")
 
-            text = recognizer.recognize_google(audio)
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=7)
+
+            text = recognizer.recognize_google(audio, language="en-IN")
             return text
 
-    except sr.WaitTimeoutError:
-        return "⏱️ Listening timed out"
-
-    except sr.UnknownValueError:
-        return "❌ Could not understand audio"
-
-    except Exception as e:
-        return f"Error: {str(e)}"
+    except:
+        return None

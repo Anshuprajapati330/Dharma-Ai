@@ -1,19 +1,19 @@
+import logging
+from functools import lru_cache
 from dotenv import load_dotenv
 import os
-from daily_wisdom import get_daily_wisdom
-
-load_dotenv()
-
 import chromadb
 from chromadb.utils import embedding_functions
 from groq import Groq
-import streamlit as st
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 # ----------------------
 # ChromaDB Setup
 # ----------------------
 
-@st.cache_resource
+@lru_cache(maxsize=1)
 def load_chroma():
     client = chromadb.Client(
         settings=chromadb.Settings(
@@ -33,27 +33,12 @@ def load_chroma():
     return collection
 
 
-collection = load_chroma()
-
-# print("\n🌅 Today's Dharma Wisdom:\n")
-st.sidebar.markdown("### 🌅 Today's Wisdom")
-st.sidebar.write(get_daily_wisdom(collection))
-
-daily_wisdom = get_daily_wisdom(collection)
-
-print(daily_wisdom)
-print("\n" + "=" * 50)
-
-# ----------------------
-# Groq Setup
-# ----------------------
-
-@st.cache_resource
+@lru_cache(maxsize=1)
 def load_groq():
-    return Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-
-groq_client = load_groq()
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise EnvironmentError("Missing GROQ_API_KEY in .env file")
+    return Groq(api_key=api_key)
 
 
 def get_mode_prompt(mode):
@@ -76,20 +61,24 @@ def get_mode_prompt(mode):
 # ----------------------
 
 def generate_response(query, mode="Calm"):
-    # Retrieve knowledge
-    results = collection.query(
-        query_texts=[query],
-        n_results=5
-    )
+    if not query or not query.strip():
+        return "Please enter a question so Dharma-AI can help you."
 
-    docs = results["documents"][0]
-    context = "\n".join(docs)
+    try:
+        collection = load_chroma()
+        groq_client = load_groq()
 
-    # Mode instruction
-    mode_instruction = get_mode_prompt(mode)
+        results = collection.query(
+            query_texts=[query],
+            n_results=3
+        )
 
-    # Final Prompt
-    prompt = f"""
+        docs = results.get("documents", [[ ]])[0] or []
+        context = "\n".join([doc for doc in docs if doc])
+
+        mode_instruction = get_mode_prompt(mode)
+
+        prompt = f"""
 You are Dharma AI, a wise and calm guide based on ethical teachings 
 from Bhagavad Gita, Ramayana, Mahabharata, and world philosophy.
 
@@ -109,11 +98,15 @@ Instructions:
 Answer:
 """
 
-    response = groq_client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
 
-    return response.choices[0].message.content
+        return response.choices[0].message.content
+
+    except Exception as error:
+        logging.exception("Failed to generate Dharma-AI response")
+        return "Sorry, I could not generate an answer right now. Please try again in a moment."

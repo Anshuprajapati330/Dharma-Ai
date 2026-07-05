@@ -1,233 +1,167 @@
 import streamlit as st
+from auth import login, signup
 from dharma_ai import generate_response
-from datetime import datetime
+from daily_wisdom import get_daily_wisdom
 from voice_input import speech_to_text
-# Page Config
-with st.spinner("🚀 Loading Dharma-AI... Please wait"):
-    pass
-st.set_page_config(
-    page_title="Dharma-AI Chatbot",
-    page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
-# Custom CSS for better chat interface
-st.markdown("""
-    <style>
-    .main {
-        background: linear-gradient(135deg, #0f172a 0%, #1a1f35 100%);
-        color: white;
-    }
-    
-    .title {
-        font-size: 42px;
-        font-weight: bold;
-        text-align: center;
-        color: #5a9fc7;
-        margin-bottom: 10px;
-    }
-    
-    .subtitle {
-        text-align: center;
-        font-size: 16px;
-        color: #cbd5e1;
-        margin-bottom: 30px;
-    }
-    
-    .chat-container {
-        background-color: #1e293b;
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0px 0px 20px rgba(0,0,0,0.5);
-    }
-    
-    .message-container {
-        display: flex;
-        margin-bottom: 15px;
-        animation: fadeIn 0.3s ease-in;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .user-message {
-        background-color: #5a9fc7;
-        padding: 12px 16px;
-        border-radius: 12px;
-        max-width: 70%;
-        margin-left: auto;
-        margin-right: 0;
-        word-wrap: break-word;
-    }
-    
-    .bot-message {
-        background-color: #334155;
-        padding: 12px 16px;
-        border-radius: 12px;
-        max-width: 70%;
-        margin-right: auto;
-        margin-left: 0;
-        word-wrap: break-word;
-    }
-    
-    .mode-badge {
-        display: inline-block;
-        background-color: #475569;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        color: #e2e8f0;
-        margin-top: 5px;
-    }
-    
-    .sidebar-box {
-        background-color: #1e293b;
-        padding: 20px;
-        border-radius: 15px;
-        margin-bottom: 20px;
-        box-shadow: 0px 0px 15px rgba(0,0,0,0.4);
-    }
-    </style>
-""", unsafe_allow_html=True)
+# ----------------------
+# PAGE CONFIG
+# ----------------------
+st.set_page_config(page_title="Dharma-AI", page_icon="🧠", layout="wide")
 
-# Initialize session state for chat history and mode
+# ----------------------
+# SESSION STATE
+# ----------------------
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "mode" not in st.session_state:
     st.session_state.mode = "Calm 🧘"
 
-if "conversation_started" not in st.session_state:
-    st.session_state.conversation_started = False
+if "chat_input" not in st.session_state:
+    st.session_state.chat_input = ""
 
-# Sidebar Configuration
-with st.sidebar:
-    st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
-    st.markdown("### ⚙️ Configuration")
-    
-    st.session_state.mode = st.selectbox(
-        "Select Guidance Mode:",
-        [
-            "Calm 🧘",
-            "Logical 🧠",
-            "Ethical ⚖️",
-            "Motivational 🚀",
-            "Direct 🎯"
-        ],
-        index=0
-    )
-    
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Tips Section
-    st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
-    st.markdown("### 💡 Tips")
-    st.markdown("""
-    • Ask clear, specific questions
-    • Choose the mode that fits your need
-    • Explore different perspectives
-    • Be open to the guidance
-    """)
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Chat History Controls
-    st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
-    st.markdown("### 🗂️ Chat History")
-    if st.button("🔄 Clear Conversation", use_container_width=True):
-        st.session_state.messages = []
-        st.session_state.conversation_started = False
-        st.rerun()
-    
-    if len(st.session_state.messages) > 0:
-        st.markdown(f"**Messages:** {len(st.session_state.messages)}")
-    st.markdown("</div>", unsafe_allow_html=True)
+# ----------------------
+# 🔐 LOGIN / SIGNUP UI
+# ----------------------
+if not st.session_state.authenticated:
 
-# Main Chat Area
-st.markdown('<div class="title">🧠 Dharma-AI</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Ethical • Intelligent • Context-Aware Guidance</div>', unsafe_allow_html=True)
+    st.title("🔐 Dharma-AI Login")
 
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    tab1, tab2 = st.tabs(["Login", "Signup"])
 
-# Display chat history
-if st.session_state.messages:
-    for message in st.session_state.messages:
-        if message["role"] == "user":
-            st.markdown(f"""
-                <div class="message-container">
-                    <div class="user-message">
-                        <strong>You:</strong> {message['content']}
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-                <div class="message-container">
-                    <div class="bot-message">
-                        <strong>Dharma-AI:</strong><br>{message['content']}<br>
-                        <span class="mode-badge">{message['mode']}</span>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
+    # LOGIN
+    with tab1:
+        username = st.text_input("Username", key="login_user")
+        password = st.text_input("Password", type="password", key="login_pass")
+
+        if st.button("Login"):
+            success, msg = login(username, password)
+            if success:
+                st.session_state.authenticated = True
+                st.session_state.user = username
+                st.success("Login successful")
+                st.rerun()
+            else:
+                st.error(msg)
+
+    # SIGNUP
+    with tab2:
+        new_user = st.text_input("New Username", key="signup_user")
+        new_pass = st.text_input("New Password", type="password", key="signup_pass")
+
+        if st.button("Signup"):
+            success, msg = signup(new_user, new_pass)
+            if success:
+                st.success("Signup successful, now login")
+            else:
+                st.error(msg)
+
+# ----------------------
+# 🤖 CHATBOT UI
+# ----------------------
 else:
-    st.markdown("""
-        <div style='text-align: center; color: #cbd5e1; padding: 40px;'>
-            <h3>👋 Welcome to Dharma-AI Chatbot</h3>
-            <p>Ask me anything and receive ethical, intelligent guidance.</p>
-            <p>Start by typing your question below...</p>
-        </div>
-    """, unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
+    # ----------------------
+    # SIDEBAR
+    # ----------------------
+    with st.sidebar:
+        st.write(f"👤 {st.session_state.user}")
 
-# Chat Input Area
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        st.session_state.mode = st.selectbox(
+            "Select Mode",
+            ["Calm 🧘", "Logical 🧠", "Ethical ⚖️", "Motivational 🚀", "Direct 🎯"]
+        )
 
-col1, col2 = st.columns([4, 1])
+        if st.button("🧹 Clear Chat"):
+            st.session_state.messages = []
+            st.rerun()
 
-with col1:
-    user_input = st.text_input(
-        "💬 Type your question here...",
-        placeholder="Ask me anything...",
-        label_visibility="collapsed"
-    )
+        if st.button("Logout"):
+            st.session_state.authenticated = False
+            st.session_state.messages = []
+            st.rerun()
 
-with col2:
-    send_button = st.button("Send ➤", use_container_width=True)
+    # ----------------------
+    # TITLE
+    # ----------------------
+    st.title("🧠 Dharma-AI")
+    st.caption("Ethical • Intelligent • Voice-enabled AI")
 
-if send_button and user_input:
-    st.session_state.conversation_started = True
-    
-    # Add user message to history
-    st.session_state.messages.append({
-        "role": "user",
-        "content": user_input
-    })
-    
-    # Get clean mode
-    clean_mode = st.session_state.mode.split()[0]
-    
-    # Generate response
-    with st.spinner("🧠 Dharma-AI is thinking deeply..."):
-        try:
-            response = generate_response(user_input, clean_mode)
-            
-            # Add bot response to history
+    # ----------------------
+    # TIPS
+    # ----------------------
+    st.markdown("### 💡 Tips")
+    st.info("Ask about life, ethics, decisions, or motivation.")
+
+    # ----------------------
+    # CHAT HISTORY
+    # ----------------------
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            st.markdown(f"**You:** {msg['content']}")
+        else:
+            st.markdown(f"**Dharma-AI:** {msg['content']}  \n`{msg.get('mode','')}`")
+
+    # ----------------------
+    # INPUT AREA
+    # ----------------------
+    col1, col2, col3 = st.columns([5, 1, 1])
+
+    with col1:
+        user_input = st.text_input("Type your message...", key="chat_input")
+
+    with col2:
+        send_button = st.button("Send")
+
+    with col3:
+        mic_button = st.button("🎤 Speak")
+
+    # ----------------------
+    # TEXT INPUT
+    # ----------------------
+    if send_button and user_input:
+        st.session_state.messages.append({
+            "role": "user",
+            "content": user_input
+        })
+
+        with st.spinner("🧠 Thinking..."):
+            response = generate_response(user_input, st.session_state.mode.split()[0])
+
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": response,
+            "mode": st.session_state.mode
+        })
+
+        st.session_state.chat_input = ""
+        st.rerun()
+
+    # ----------------------
+    # VOICE INPUT
+    # ----------------------
+    if mic_button:
+        st.info("🎤 Listening... Speak now")
+
+        voice_text = speech_to_text()
+
+        if voice_text:
+            st.session_state.messages.append({
+                "role": "user",
+                "content": voice_text
+            })
+
+            with st.spinner("🧠 Thinking..."):
+                response = generate_response(voice_text, st.session_state.mode.split()[0])
+
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": response,
                 "mode": st.session_state.mode
             })
-            
+
             st.rerun()
-        except Exception as e:
-            st.error(f"Error generating response: {str(e)}")
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Footer
-st.markdown("---")
-st.markdown("<center>🙏 Built with ❤️ using Dharma-AI | Ethical Guidance, Powered by Wisdom</center>", unsafe_allow_html=True)
