@@ -123,7 +123,7 @@ else:
     # ----------------------
     # TEXT INPUT
     # ----------------------
-    if send_button and user_input:
+    if send_button:
         st.session_state.messages.append({
             "role": "user",
             "content": user_input
