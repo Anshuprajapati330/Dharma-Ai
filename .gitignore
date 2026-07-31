@@ -1,5 +1,16 @@
 .env
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
 tempCodeRunnerFile.py
+.venv/
+venv/
+.pytest_cache/
+chroma_db/
+.idea/
+.DS_Store
 

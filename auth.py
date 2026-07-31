@@ -1,40 +1,83 @@
-import json
 import os
-import hashlib
+import requests
 
-FILE = "users.json"
+from sqlalchemy.orm import sessionmaker
 
-def load_users():
-    if not os.path.exists(FILE):
-        return {}
-    with open(FILE, "r") as f:
-        return json.load(f)
+from backend.auth import hash_password, verify_password
+from backend.models import User, engine
 
-def save_users(users):
-    with open(FILE, "w") as f:
-        json.dump(users, f)
+Session = sessionmaker(bind=engine)
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
+
+
+def _ensure_local_user_store():
+    from backend.models import Base
+
+    Base.metadata.create_all(engine)
+
 
 def signup(username, password):
-    users = load_users()
+    username = (username or "").strip()
+    password = (password or "").strip()
+    if not username or not password:
+        return False, "Username and password are required."
 
-    if username in users:
-        return False, "User already exists"
+    _ensure_local_user_store()
+    session_factory = Session()
+    try:
+        existing = session_factory.query(User).filter(User.username == username).first()
+        if existing:
+            return False, "User already exists"
 
-    users[username] = hash_password(password)
-    save_users(users)
+        user = User(username=username, password_hash=hash_password(password))
+        session_factory.add(user)
+        session_factory.commit()
+        return True, "Signup successful"
+    finally:
+        session_factory.close()
 
-    return True, "Signup successful"
 
 def login(username, password):
-    users = load_users()
+    username = (username or "").strip()
+    password = (password or "").strip()
+    if not username or not password:
+        return False, "Username and password are required."
 
-    if username not in users:
-        return False, "User not found"
+    _ensure_local_user_store()
+    session_factory = Session()
+    try:
+        user = session_factory.query(User).filter(User.username == username).first()
+        if not user or not verify_password(password, user.password_hash):
+            return False, "Invalid credentials"
+        return True, "Login successful"
+    finally:
+        session_factory.close()
 
-    if users[username] != hash_password(password):
-        return False, "Incorrect password"
 
-    return True, "Login successful"
+def signup_via_backend(username, password):
+    try:
+        response = requests.post(
+            f"{API_BASE_URL}/auth/register",
+            json={"username": username, "password": password},
+            timeout=10,
+        )
+        if response.status_code == 200:
+            return True, "Signup successful"
+        return False, response.json().get("detail", "Signup failed")
+    except requests.RequestException:
+        return None, None
+
+
+def login_via_backend(username, password):
+    try:
+        response = requests.post(
+            f"{API_BASE_URL}/auth/login",
+            json={"username": username, "password": password},
+            timeout=10,
+        )
+        if response.status_code == 200:
+            return True, "Login successful"
+        return False, response.json().get("detail", "Login failed")
+    except requests.RequestException:
+        return None, None

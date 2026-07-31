@@ -1,0 +1,22 @@
+[project]
+name = "dharma-ai-project"
+version = "0.1.0"
+description = "Interview-ready Dharma AI project with FastAPI backend, database persistence, and Streamlit frontend"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "sqlalchemy",
+  "requests",
+  "streamlit",
+  "python-dotenv",
+  "speechrecognition",
+  "groq",
+  "chromadb",
+  "sentence-transformers",
+  "python-jose[cryptography]",
+  "passlib[bcrypt]",
+  "psycopg2-binary",
+  "alembic"
+]

@@ -1,8 +1,19 @@
 import streamlit as st
-from auth import login, signup
-from dharma_ai import generate_response
-from daily_wisdom import get_daily_wisdom
-from voice_input import speech_to_text
+
+
+def get_auth_functions():
+    from auth import login, signup
+    return login, signup
+
+
+def get_response_function():
+    from dharma_ai import generate_response
+    return generate_response
+
+
+def get_voice_function():
+    from voice_input import speech_to_text
+    return speech_to_text
 
 # ----------------------
 # PAGE CONFIG
@@ -24,6 +35,9 @@ if "mode" not in st.session_state:
 if "chat_input" not in st.session_state:
     st.session_state.chat_input = ""
 
+if "draft_input" not in st.session_state:
+    st.session_state.draft_input = ""
+
 # ----------------------
 # 🔐 LOGIN / SIGNUP UI
 # ----------------------
@@ -39,6 +53,7 @@ if not st.session_state.authenticated:
         password = st.text_input("Password", type="password", key="login_pass")
 
         if st.button("Login"):
+            login, signup = get_auth_functions()
             success, msg = login(username, password)
             if success:
                 st.session_state.authenticated = True
@@ -54,6 +69,7 @@ if not st.session_state.authenticated:
         new_pass = st.text_input("New Password", type="password", key="signup_pass")
 
         if st.button("Signup"):
+            login, signup = get_auth_functions()
             success, msg = signup(new_user, new_pass)
             if success:
                 st.success("Signup successful, now login")
@@ -130,6 +146,7 @@ else:
         })
 
         with st.spinner("🧠 Thinking..."):
+            generate_response = get_response_function()
             response = generate_response(user_input, st.session_state.mode.split()[0])
 
         st.session_state.messages.append({
@@ -138,7 +155,7 @@ else:
             "mode": st.session_state.mode
         })
 
-        st.session_state.chat_input = ""
+        st.session_state.draft_input = ""
         st.rerun()
 
     # ----------------------
@@ -147,6 +164,7 @@ else:
     if mic_button:
         st.info("🎤 Listening... Speak now")
 
+        speech_to_text = get_voice_function()
         voice_text = speech_to_text()
 
         if voice_text:
@@ -156,6 +174,7 @@ else:
             })
 
             with st.spinner("🧠 Thinking..."):
+                generate_response = get_response_function()
                 response = generate_response(voice_text, st.session_state.mode.split()[0])
 
             st.session_state.messages.append({

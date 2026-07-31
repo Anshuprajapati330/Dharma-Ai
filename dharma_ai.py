@@ -56,6 +56,36 @@ def get_mode_prompt(mode):
         return "Respond normally."
 
 
+def generate_quick_response(query, mode_instruction):
+    q = (query or "").strip().lower()
+    if not q:
+        return None
+
+    emotional_keywords = [
+        "feel", "feeling", "sad", "angry", "stress", "stressed",
+        "confused", "lost", "anxious", "depressed", "frustrated", "tired"
+    ]
+    guidance_keywords = [
+        "should i", "what should i do", "advice", "help", "decision",
+        "problem", "struggle", "difficult", "guide me"
+    ]
+
+    if any(keyword in q for keyword in emotional_keywords):
+        return (
+            f"{mode_instruction}\n\n"
+            "Pause for a moment, take a slow breath, and name the feeling clearly. "
+            "Then choose one small step that is honest, compassionate, and helpful right now."
+        )
+
+    if any(keyword in q for keyword in guidance_keywords):
+        return (
+            f"{mode_instruction}\n\n"
+            "A balanced answer is to pause, reflect on your values, and choose the action that is honest, compassionate, and helpful to both yourself and others."
+        )
+
+    return None
+
+
 # ----------------------
 # MAIN FUNCTION
 # ----------------------
@@ -64,19 +94,33 @@ def generate_response(query, mode="Calm"):
     if not query or not query.strip():
         return "Please enter a question so Dharma-AI can help you."
 
+    mode_instruction = get_mode_prompt(mode)
+    q = query.strip()
+
+    fallback = (
+        f"{mode_instruction}\n\n"
+        f"You asked: {q}\n\n"
+        "A balanced answer is to pause, reflect on your values, and choose the action that is honest, compassionate, and helpful to both yourself and others."
+    )
+
+    quick_reply = generate_quick_response(q, mode_instruction)
+    if quick_reply:
+        return quick_reply
+
+    if not os.getenv("GROQ_API_KEY"):
+        return fallback
+
     try:
         collection = load_chroma()
         groq_client = load_groq()
 
         results = collection.query(
-            query_texts=[query],
+            query_texts=[q],
             n_results=3
         )
 
         docs = results.get("documents", [[ ]])[0] or []
         context = "\n".join([doc for doc in docs if doc])
-
-        mode_instruction = get_mode_prompt(mode)
 
         prompt = f"""
 You are Dharma AI, a wise and calm guide based on ethical teachings 
@@ -88,7 +132,7 @@ Context:
 {context}
 
 Question:
-{query}
+{q}
 
 Instructions:
 - Give practical life advice
@@ -102,11 +146,14 @@ Answer:
             model="llama-3.1-8b-instant",
             messages=[
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            timeout=5,
         )
 
-        return response.choices[0].message.content
+        if response and getattr(response, "choices", None):
+            return response.choices[0].message.content
 
     except Exception as error:
         logging.exception("Failed to generate Dharma-AI response")
-        return "Sorry, I could not generate an answer right now. Please try again in a moment."
+
+    return fallback
