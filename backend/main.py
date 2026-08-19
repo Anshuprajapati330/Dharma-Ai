@@ -1,33 +1,40 @@
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from .auth import hash_password, verify_password
 from .gateway import router as gateway_router
-from .models import ChatMessage, ChatSession, User, engine
-from .models import Base
+from .models import Base, ChatMessage, ChatSession, User, engine
 
 Base.metadata.create_all(engine)
 
 app = FastAPI(title="Dharma AI API", version="1.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(gateway_router)
 
 
 class RegisterRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8, max_length=128)
 
 
 class LoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8, max_length=128)
 
 
 class MessageRequest(BaseModel):
-    username: str
-    message: str
+    username: str = Field(..., min_length=3, max_length=50)
+    message: str = Field(..., min_length=1, max_length=2000)
     mode: str = "Calm"
 
 
@@ -38,13 +45,14 @@ def health_check():
 
 @app.post("/auth/register")
 def register(request: RegisterRequest):
+    username = request.username.strip().lower()
     with Session(engine) as session:
-        existing = session.query(User).filter(User.username == request.username).first()
+        existing = session.query(User).filter(User.username == username).first()
         if existing:
             raise HTTPException(status_code=400, detail="User already exists")
 
         user = User(
-            username=request.username,
+            username=username,
             password_hash=hash_password(request.password),
         )
         session.add(user)
@@ -55,8 +63,9 @@ def register(request: RegisterRequest):
 
 @app.post("/auth/login")
 def login(request: LoginRequest):
+    username = request.username.strip().lower()
     with Session(engine) as session:
-        user = session.query(User).filter(User.username == request.username).first()
+        user = session.query(User).filter(User.username == username).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 

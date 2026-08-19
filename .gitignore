@@ -1,3 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+.env.*
+
+# Databases
+*.db
+dharma.db
+
+# ChromaDB persistence
+chroma_db/
+
+# Editor / OS files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tempCodeRunnerFile.py
 .env
 __pycache__/
 *.py[cod]

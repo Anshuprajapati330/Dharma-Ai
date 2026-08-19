@@ -36,10 +36,10 @@ def start_frontend():
 
 def main():
     backend = start_backend()
-    time.sleep(2)
     frontend = start_frontend()
     print("Backend starting at http://127.0.0.1:8000")
     print("Frontend starting at http://127.0.0.1:8501")
+    print("Press Ctrl+C to stop both services.")
     try:
         while True:
             time.sleep(1)

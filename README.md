@@ -21,18 +21,6 @@ Dharma-AI is an interview-ready AI assistant project that combines a Streamlit f
 
 ## Run locally
 
-### One-command startup
-
-```bash
-python run_app.py
-```
-
-This launches:
-- Backend API at http://127.0.0.1:8000
-- Streamlit UI at http://127.0.0.1:8501
-
-### Manual startup
-
 1. Install dependencies:
 
 ```bash

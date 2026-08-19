@@ -4,7 +4,8 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from jose import JWTError, jwt
+import bcrypt
+from jose import jwt
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key")
 ALGORITHM = "HS256"
@@ -12,29 +13,33 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
 def hash_password(password: str) -> str:
-    salt = os.urandom(16).hex()
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 200_000).hex()
-    return f"pbkdf2_sha256$200000${salt}${digest}"
+    if not password or not password.strip():
+        raise ValueError("Password cannot be empty")
+
+    try:
+        salt = bcrypt.gensalt(rounds=12)
+        return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+    except Exception:
+        salt_bytes = os.urandom(16)
+        derived = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt_bytes, 200_000)
+        return f"pbkdf2_sha256${salt_bytes.hex()}${derived.hex()}"
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    if not hashed_password:
+    if not plain_password or not hashed_password:
         return False
 
-    parts = hashed_password.split("$")
-    if len(parts) != 4 or parts[0] != "pbkdf2_sha256":
-        return False
+    if hashed_password.startswith("pbkdf2_sha256$"):
+        _, salt_hex, expected_hash = hashed_password.split("$", 2)
+        if not salt_hex or not expected_hash:
+            return False
+        derived = hashlib.pbkdf2_hmac("sha256", plain_password.encode("utf-8"), bytes.fromhex(salt_hex), 200_000)
+        return hmac.compare_digest(derived.hex(), expected_hash)
 
-    iterations = int(parts[1])
-    salt = parts[2]
-    expected_digest = parts[3]
-    computed_digest = hashlib.pbkdf2_hmac(
-        "sha256",
-        plain_password.encode("utf-8"),
-        salt.encode("utf-8"),
-        iterations,
-    ).hex()
-    return hmac.compare_digest(computed_digest, expected_digest)
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

@@ -13,6 +13,6 @@ pytest
 httpx
 python-jose[cryptography]
 passlib[bcrypt]
+bcrypt==4.1.2
 psycopg2-binary
 alembic
-python-multipart
