@@ -1,21 +1,28 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
+import os
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from .auth import hash_password, verify_password
+from .auth import create_access_token, decode_access_token, hash_password, verify_password
 from .gateway import router as gateway_router
 from .models import Base, ChatMessage, ChatSession, User, engine
 
 Base.metadata.create_all(engine)
 
 app = FastAPI(title="Dharma AI API", version="1.0.0")
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:8501").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=bool(allowed_origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,9 +40,29 @@ class LoginRequest(BaseModel):
 
 
 class MessageRequest(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
     message: str = Field(..., min_length=1, max_length=2000)
+    assistant_response: str = Field(..., min_length=1, max_length=10000)
     mode: str = "Calm"
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+def current_user(token: str = Depends(oauth2_scheme)) -> User:
+    try:
+        payload = decode_access_token(token)
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail="Invalid token") from exc
+
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    with Session(engine) as session:
+        user = session.query(User).filter(User.username == username).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User no longer exists")
+        return user
 
 
 @app.get("/health")
@@ -58,7 +85,13 @@ def register(request: RegisterRequest):
         session.add(user)
         session.commit()
         session.refresh(user)
-        return {"id": user.id, "username": user.username, "created_at": user.created_at.isoformat()}
+        return {
+            "id": user.id,
+            "username": user.username,
+            "created_at": user.created_at.isoformat(),
+            "access_token": create_access_token({"sub": user.username}),
+            "token_type": "bearer",
+        }
 
 
 @app.post("/auth/login")
@@ -72,16 +105,17 @@ def login(request: LoginRequest):
         if not user.password_hash or not verify_password(request.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid password")
 
-        return {"id": user.id, "username": user.username}
+        return {
+            "id": user.id,
+            "username": user.username,
+            "access_token": create_access_token({"sub": user.username}),
+            "token_type": "bearer",
+        }
 
 
 @app.post("/chat")
-def save_chat(request: MessageRequest):
+def save_chat(request: MessageRequest, user: User = Depends(current_user)):
     with Session(engine) as session:
-        user = session.query(User).filter(User.username == request.username).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
         chat = session.query(ChatSession).filter(ChatSession.user_id == user.id).order_by(ChatSession.updated_at.desc()).first()
         if not chat:
             chat = ChatSession(user_id=user.id, title="New conversation")
@@ -89,19 +123,15 @@ def save_chat(request: MessageRequest):
             session.flush()
 
         session.add(ChatMessage(session_id=chat.id, role="user", content=request.message))
-        session.add(ChatMessage(session_id=chat.id, role="assistant", content=f"Echo: {request.message} [{request.mode}]"))
+        session.add(ChatMessage(session_id=chat.id, role="assistant", content=request.assistant_response))
         session.commit()
 
         return {"status": "saved", "session_id": chat.id}
 
 
-@app.get("/chat/history/{username}")
-def chat_history(username: str):
+@app.get("/chat/history")
+def chat_history(user: User = Depends(current_user)):
     with Session(engine) as session:
-        user = session.query(User).filter(User.username == username).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
         chats = session.query(ChatSession).filter(ChatSession.user_id == user.id).order_by(ChatSession.updated_at.desc()).all()
         return [
             {

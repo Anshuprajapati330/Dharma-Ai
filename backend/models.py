@@ -9,7 +9,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 import os
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./dharma.db")
-engine = create_engine(DATABASE_URL, future=True)
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(DATABASE_URL, connect_args=connect_args, future=True, pool_pre_ping=True)
 
 
 class Base(DeclarativeBase):

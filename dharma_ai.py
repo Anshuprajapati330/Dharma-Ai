@@ -1,4 +1,5 @@
 import logging
+import json
 import re
 from functools import lru_cache
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ from groq import Groq
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
 # ----------------------
 # ChromaDB Setup
@@ -30,6 +32,37 @@ def load_chroma():
         name="ethics_collection",
         embedding_function=embedding_fn
     )
+
+    if collection.count() == 0:
+        data_folder = os.path.join(os.path.dirname(__file__), "data")
+        documents = []
+        metadatas = []
+        ids = []
+
+        for filename in sorted(os.listdir(data_folder)):
+            if not filename.endswith(".json"):
+                continue
+
+            with open(os.path.join(data_folder, filename), "r", encoding="utf-8") as data_file:
+                records = json.load(data_file)
+
+            if isinstance(records, dict):
+                records = [records]
+
+            for record in records:
+                text = (
+                    record.get("translation")
+                    or record.get("summary")
+                    or record.get("text")
+                    or str(record)
+                )
+                principle = record.get("ethical_principle", "")
+                documents.append(f"{text} Principle: {principle}")
+                metadatas.append({"source": record.get("source", filename)})
+                ids.append(f"{filename}-{len(ids)}")
+
+        if documents:
+            collection.add(documents=documents, metadatas=metadatas, ids=ids)
 
     return collection
 
@@ -68,31 +101,75 @@ def generate_quick_response(query, mode_instruction):
         "feel", "feeling", "sad", "angry", "stress", "stressed",
         "confused", "lost", "anxious", "depressed", "frustrated", "tired"
     ]
-    guidance_keywords = [
-        "should i", "what should i do", "advice", "help", "decision",
-        "problem", "struggle", "difficult", "guide me"
-    ]
-
-    if any(keyword in q for keyword in emotional_keywords):
+    if "stress" in q or "stressed" in q:
         return (
-            f"{mode_instruction}\n\n"
-            "Pause for a moment, take a slow breath, and name the feeling clearly. "
-            "Then choose one small step that is honest, compassionate, and helpful right now."
+            "Reduce the pressure to the next manageable step. Write down what is urgent, "
+            "what can wait, and one action you can finish in the next ten minutes."
         )
 
-    if any(keyword in q for keyword in guidance_keywords):
+    if "anxious" in q or "anxiety" in q or "worry" in q or "worried" in q:
         return (
-            f"{mode_instruction}\n\n"
-            "A balanced answer is to pause, reflect on your values, and choose the action that is honest, compassionate, and helpful to both yourself and others."
+            "Separate what you can control from what you cannot. Take one slow breath, "
+            "then act on the smallest useful thing within your control."
         )
 
-    simple_question_match = re.match(r"^(what|who|why|how)\s+(is|are|do|does|can)\s+(.+?)[?.]?$", q)
-    if simple_question_match and len(q.split()) <= 8:
-        subject = simple_question_match.group(3).strip().replace("-", " ").strip()
+    if "sad" in q or "sadness" in q or "depressed" in q:
         return (
-            f"{mode_instruction}\n\n"
-            f"{subject.capitalize()} can be understood as a guiding idea rooted in awareness, balance, and kindness. "
-            "A practical way to approach it is to pause, reflect on your values, and choose the action that is compassionate and helpful."
+            "Do not carry this alone. Tell someone you trust how you are feeling, "
+            "and give yourself one gentle, practical task for today."
+        )
+
+    if "angry" in q or "anger" in q or "frustrated" in q or "upset" in q:
+        if "upset" in q and "angry" not in q and "anger" not in q and "frustrated" not in q:
+            return (
+                "I am sorry you are feeling upset. Take a slow breath and give yourself a moment. "
+                "You do not have to solve everything right now; tell me what happened, and we can think it through together."
+            )
+        return (
+            "Create a little space before responding. Name what crossed a boundary, "
+            "decide what outcome you want, and speak once your words can be constructive."
+        )
+
+    if "tired" in q or "exhausted" in q:
+        return (
+            "Treat rest as part of the work. Pause, drink some water, and choose one "
+            "necessary task instead of trying to solve everything at once."
+        )
+
+    if "mental health" in q or "mental wellbeing" in q or "mental wellness" in q:
+        return (
+            "Care for your mental health one small step at a time:\n"
+            "1. Keep a simple routine with regular sleep and meals.\n"
+            "2. Take short breaks and gently bring your attention back when your mind wanders.\n"
+            "3. Talk honestly with someone you trust.\n\n"
+            "If these feelings continue or make daily life difficult, a qualified "
+            "mental-health professional can support you. You do not have to handle it alone.\n\n"
+            "Source: Bhagavad Gita, Chapter 6, Verses 5, 6, and 26 (adapted). "
+            "These verses reflect self-support, awareness of the mind, and returning it "
+            "gently to steadiness. The practical care steps above are modern supportive guidance."
+        )
+
+    if "fight" in q or "fighting" in q or "conflict" in q:
+        return (
+            "Do not choose a fight out of anger or pride. First try calm conversation, "
+            "clear boundaries, and help from a trusted person. If someone is in immediate "
+            "danger, move to a safe place and contact local emergency support.\n\n"
+            "Source: Mahabharata, Krishna's diplomacy, and Bhagavad Gita, Chapter 2 "
+            "(adapted): peaceful resolution should be tried first, and any difficult "
+            "action must be guided by protection, responsibility, and dharma rather than anger."
+        )
+
+    decision_words = ("decision", "decide", "choose", "choice")
+    family_words = ("family", "parents", "mother", "father")
+    work_words = ("job", "career", "work", "office")
+    if any(word in q for word in decision_words) and any(word in q for word in family_words) and any(word in q for word in work_words):
+        return (
+            "When family and career pull you in different directions, do not decide from guilt or pressure. "
+            "Write down the real need on each side, check which responsibility is urgent, and look for a practical middle path "
+            "such as flexible hours, shared support, or a clear timeline. Discuss the decision honestly with your family and choose "
+            "the option that protects your responsibilities without abandoning your long-term well-being.\n\n"
+            "Source: Mahabharata, Arjuna's moral dilemma (adapted). The teaching is that difficult choices should be guided by "
+            "duty, responsibility, and righteousness rather than emotion alone."
         )
 
     return None
@@ -111,6 +188,7 @@ def _preprocess_query(q: str) -> str:
     return q
 
 
+@lru_cache(maxsize=128)
 def generate_response(query, mode="Calm"):
     if not query or not query.strip():
         return "Please enter a question so Dharma-AI can help you."
@@ -118,29 +196,25 @@ def generate_response(query, mode="Calm"):
     mode_instruction = get_mode_prompt(mode)
     q = query.strip()
 
-    fallback = (
-        f"{mode_instruction}\n\n"
-        f"You asked: {q}\n\n"
-        "A balanced answer is to pause, reflect on your values, and choose the action that is honest, compassionate, and helpful to both yourself and others."
+    unable_to_answer = (
+        "I couldn't find a reliable source in Dharma-AI's knowledge base for this question, "
+        "so I won't invent an answer. Please ask about ethics, life decisions, mental well-being, "
+        "or teachings from the Gita, Ramayana, and Mahabharata."
     )
 
     quick_reply = generate_quick_response(q, mode_instruction)
     if quick_reply:
         return quick_reply
 
-    if not os.getenv("GROQ_API_KEY"):
-        return fallback
-
     try:
         collection = load_chroma()
-        groq_client = load_groq()
 
         q_clean = _preprocess_query(q)
 
         # Query ChromaDB
         results = collection.query(
             query_texts=[q_clean],
-            n_results=5
+            n_results=3
         )
 
         docs = results.get("documents", [[]])[0] or []
@@ -148,7 +222,7 @@ def generate_response(query, mode="Calm"):
         dists = results.get("distances", [[]])[0] or []
 
         if not docs:
-            return fallback
+            return unable_to_answer
 
         # Build and sort by distance (smaller = more similar)
         items = []
@@ -160,11 +234,8 @@ def generate_response(query, mode="Calm"):
         items.sort(key=lambda x: x.get("dist", 0))
 
         # Guardrail: if top match is not similar enough, avoid hallucinating
-        if dists and len(dists) and items[0].get("dist", 0) > 0.5:
-            return (
-                "I couldn't find reliable references in the knowledge base to confidently answer that. "
-                "Here's a gentle fallback:\n\n" + fallback
-            )
+        if dists and len(dists) and items[0].get("dist", 0) > 0.78:
+            return unable_to_answer
 
         # Compose context and a simple source list (first 3)
         top_items = items[:3]
@@ -176,6 +247,19 @@ def generate_response(query, mode="Calm"):
                 src = it["meta"].get("source")
             if src:
                 sources.append(f"{i+1}. {src}")
+
+        source_text = sources[0].split(". ", 1)[-1] if sources else "the Dharma-AI knowledge base"
+        grounded_fallback = (
+            "I found this relevant teaching in the knowledge base.\n\n"
+            f"{top_items[0]['doc']}\n\n"
+            "Reflection: apply this idea to your situation with compassion, responsibility, "
+            f"and attention to what you can control.\n\nSource: {source_text}"
+        )
+
+        if not os.getenv("GROQ_API_KEY"):
+            return grounded_fallback
+
+        groq_client = load_groq()
 
         prompt = f"""
 You are Dharma AI, a wise and calm guide based on ethical teachings 
@@ -198,11 +282,12 @@ Answer:
 """
 
         response = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model=GROQ_MODEL,
             messages=[
                 {"role": "user", "content": prompt}
             ],
-            timeout=5,
+            max_tokens=250,
+            timeout=3,
         )
 
         if response and getattr(response, "choices", None):
@@ -216,5 +301,7 @@ Answer:
 
     except Exception as error:
         logging.exception("Failed to generate Dharma-AI response")
+        if "grounded_fallback" in locals():
+            return grounded_fallback
 
-    return fallback
+    return unable_to_answer

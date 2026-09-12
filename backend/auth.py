@@ -5,9 +5,18 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
+from dotenv import load_dotenv
 from jose import jwt
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key")
+load_dotenv()
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    if environment in {"development", "dev", "local", "test"}:
+        SECRET_KEY = "local-development-secret-change-me"
+    else:
+        raise RuntimeError("JWT_SECRET_KEY must be set")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 

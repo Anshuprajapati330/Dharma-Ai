@@ -7,4 +7,26 @@ services:
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port 10000
     envVars:
       - key: DATABASE_URL
-        value: sqlite:///./dharma.db
+        fromDatabase:
+          name: dharma-ai-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://dharma-ai-frontend.onrender.com
+
+  - type: web
+    name: dharma-ai-frontend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run chatbot.py --server.address 0.0.0.0 --server.port $PORT
+    envVars:
+      - key: API_BASE_URL
+        value: https://dharma-ai-api.onrender.com
+
+databases:
+  - name: dharma-ai-db
+    plan: free

@@ -13,10 +13,10 @@ def signup(username, password):
             timeout=10,
         )
         if response.status_code == 200:
-            return True, "Signup successful"
-        return False, response.json().get("detail", "Signup failed")
+            return True, "Signup successful", response.json().get("access_token")
+        return False, response.json().get("detail", "Signup failed"), None
     except requests.RequestException:
-        return False, "Backend unavailable. Start the API server first."
+        return False, "Backend unavailable. Start the API server first.", None
 
 
 def login(username, password):
@@ -27,7 +27,40 @@ def login(username, password):
             timeout=10,
         )
         if response.status_code == 200:
-            return True, "Login successful"
-        return False, response.json().get("detail", "Login failed")
+            return True, "Login successful", response.json().get("access_token")
+        return False, response.json().get("detail", "Login failed"), None
     except requests.RequestException:
-        return False, "Backend unavailable. Start the API server first."
+        return False, "Backend unavailable. Start the API server first.", None
+
+
+def save_chat(token, message, assistant_response, mode):
+    try:
+        response = requests.post(
+            f"{API_BASE_URL}/chat",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "message": message,
+                "assistant_response": assistant_response,
+                "mode": mode,
+            },
+            timeout=10,
+        )
+        if response.status_code == 200:
+            return True, "Chat saved"
+        return False, response.json().get("detail", "Chat could not be saved")
+    except requests.RequestException:
+        return False, "Chat could not be saved because the backend is unavailable."
+
+
+def get_chat_history(token):
+    try:
+        response = requests.get(
+            f"{API_BASE_URL}/chat/history",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+        if response.status_code == 200:
+            return True, response.json()
+        return False, response.json().get("detail", "Chat history could not be loaded")
+    except requests.RequestException:
+        return False, "Chat history could not be loaded because the backend is unavailable."
