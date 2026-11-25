@@ -47,10 +47,46 @@ uvicorn backend.main:app --reload
 streamlit run chatbot.py
 ```
 
+### Windows PowerShell
+
+Open two PowerShell terminals in the project directory and run:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run chatbot.py --server.port 8501
+```
+
+The frontend defers its local API health check until login or signup, so a
+backend that is still starting does not block the initial page render.
+The knowledge-base embedding model also warms up in the background from the
+initial page load, so its first-time download and load can happen while you are
+on the login screen rather than after you send your first message.
+
+## Runtime behavior
+
+- `GROQ_MODEL` selects the model used for responses and translations. The
+  application does not silently switch to another model when it fails.
+- Hindi and English Listen actions use language-matched Edge TTS voices:
+  `hi-IN-SwaraNeural` and `en-US-AriaNeural`. Speech text is sent in a POST
+  request body, and successful audio is cached with bounded memory use; failed
+  synthesis is not cached.
+- Backend logs record retrieval, prompt, model-generation, translation, and
+  TTS timing; these timing records contain durations and model/voice
+  identifiers, not message text.
+- Chat generation retrieves knowledge-base context for each turn and sends
+  recent user and assistant turns with their original roles. Contextual
+  follow-ups use both sources to answer directly rather than restart prior
+  guidance. Responses avoid unsupported citations and keep the Gita,
+  Mahabharata, and Western ethics perspectives conditional on relevant retrieved
+  evidence.
+
 ## Run tests
 
 ```bash
-python -m pytest -q tests/test_backend.py
+python -m pytest -q
 ```
 
 ## Deployment

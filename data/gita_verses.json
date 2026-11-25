@@ -1,38 +1,454 @@
 [
-{"source":"Bhagavad Gita",
-"chapter":2,
-"verse":47,
-"translation":"You have the right to action, not to its fruits.",
-"theme":["duty","detachment","karma"],
-"ethical_principle":"Perform duty without attachment",
-"modern_context":["career decisions","work stress"]
-},
-{"source":"Bhagavad Gita","chapter":2,"verse":48,"translation":"Be steadfast in yoga, abandoning attachment.","theme":["balance","detachment"],"ethical_principle":"Maintain equanimity in success and failure","modern_context":["exam pressure","performance anxiety"]},
-{"source":"Bhagavad Gita","chapter":2,"verse":50,"translation":"Yoga is skill in action.","theme":["excellence","focus"],"ethical_principle":"Work with wisdom and efficiency","modern_context":["professional ethics"]},
-{"source":"Bhagavad Gita","chapter":3,"verse":8,"translation":"Perform your prescribed duty.","theme":["responsibility"],"ethical_principle":"Action is superior to inaction","modern_context":["procrastination","career growth"]},
-{"source":"Bhagavad Gita","chapter":3,"verse":19,"translation":"Work without attachment to attain the highest.","theme":["selfless action"],"ethical_principle":"Selfless work leads to fulfillment","modern_context":["social work","leadership"]},
-{"source":"Bhagavad Gita","chapter":3,"verse":21,"translation":"Whatever the leader does, others follow.","theme":["leadership"],"ethical_principle":"Leaders shape society","modern_context":["management","public roles"]},
-{"source":"Bhagavad Gita","chapter":4,"verse":7,"translation":"Whenever righteousness declines, I manifest.","theme":["justice","restoration"],"ethical_principle":"Stand against injustice","modern_context":["activism","ethical leadership"]},
-{"source":"Bhagavad Gita","chapter":4,"verse":18,"translation":"See inaction in action and action in inaction.","theme":["wisdom"],"ethical_principle":"Understand deeper intent of actions","modern_context":["complex decisions"]},
-{"source":"Bhagavad Gita","chapter":5,"verse":10,"translation":"Offer actions to the divine and remain unattached.","theme":["detachment"],"ethical_principle":"Detach ego from work","modern_context":["burnout","stress"]},
-{"source":"Bhagavad Gita","chapter":6,"verse":5,"translation":"Elevate yourself by your own mind.","theme":["self-discipline"],"ethical_principle":"Self-mastery is essential","modern_context":["habits","mental health"]},
-{"source":"Bhagavad Gita","chapter":6,"verse":6,"translation":"Mind can be friend or enemy.","theme":["self-control"],"ethical_principle":"Control the mind","modern_context":["addiction","focus"]},
-{"source":"Bhagavad Gita","chapter":6,"verse":26,"translation":"Bring the wandering mind under control.","theme":["discipline"],"ethical_principle":"Practice mindfulness","modern_context":["meditation","anxiety"]},
-{"source":"Bhagavad Gita","chapter":7,"verse":15,"translation":"Deluded people do not seek truth.","theme":["ignorance"],"ethical_principle":"Seek knowledge consciously","modern_context":["critical thinking"]},
-{"source":"Bhagavad Gita","chapter":9,"verse":22,"translation":"I carry what they lack and preserve what they have.","theme":["faith"],"ethical_principle":"Trust in righteous effort","modern_context":["uncertainty","risk"]},
-{"source":"Bhagavad Gita","chapter":10,"verse":8,"translation":"I am the source of all.","theme":["humility"],"ethical_principle":"Remain humble","modern_context":["success management"]},
-{"source":"Bhagavad Gita","chapter":11,"verse":32,"translation":"Time, the destroyer of worlds.","theme":["impermanence"],"ethical_principle":"Accept change","modern_context":["loss","failure"]},
-{"source":"Bhagavad Gita","chapter":12,"verse":15,"translation":"One who does not disturb others is dear to me.","theme":["compassion"],"ethical_principle":"Practice non-harm","modern_context":["relationships"]},
-{"source":"Bhagavad Gita","chapter":12,"verse":16,"translation":"Content and self-controlled devotee.","theme":["contentment"],"ethical_principle":"Live simply","modern_context":["consumerism"]},
-{"source":"Bhagavad Gita","chapter":13,"verse":8,"translation":"Humility, non-violence, patience.","theme":["virtues"],"ethical_principle":"Cultivate virtues","modern_context":["character building"]},
-{"source":"Bhagavad Gita","chapter":14,"verse":5,"translation":"Three gunas bind the soul.","theme":["self-awareness"],"ethical_principle":"Understand inner tendencies","modern_context":["behavior analysis"]},
-{"source":"Bhagavad Gita","chapter":15,"verse":7,"translation":"Living beings are fragments of the eternal.","theme":["unity"],"ethical_principle":"Respect all life","modern_context":["inclusion"]},
-{"source":"Bhagavad Gita","chapter":16,"verse":1,"translation":"Fearlessness and purity lead to liberation.","theme":["courage"],"ethical_principle":"Act with moral courage","modern_context":["whistleblowing"]},
-{"source":"Bhagavad Gita","chapter":16,"verse":21,"translation":"Lust, anger, greed lead to ruin.","theme":["self-restraint"],"ethical_principle":"Control destructive impulses","modern_context":["ethics violations"]},
-{"source":"Bhagavad Gita","chapter":17,"verse":15,"translation":"Speech should be truthful and beneficial.","theme":["communication"],"ethical_principle":"Speak responsibly","modern_context":["social media"]},
-{"source":"Bhagavad Gita","chapter":18,"verse":5,"translation":"Sacrifice and charity should not be abandoned.","theme":["service"],"ethical_principle":"Continue selfless acts","modern_context":["volunteering"]},
-{"source":"Bhagavad Gita","chapter":18,"verse":14,"translation":"Five causes of action.","theme":["accountability"],"ethical_principle":"Acknowledge shared responsibility","modern_context":["team work"]},
-{"source":"Bhagavad Gita","chapter":18,"verse":20,"translation":"Wisdom sees unity in diversity.","theme":["wisdom"],"ethical_principle":"Avoid discrimination","modern_context":["diversity inclusion"]},
-{"source":"Bhagavad Gita","chapter":18,"verse":23,"translation":"Detached action is sattvic.","theme":["pure action"],"ethical_principle":"Work without ego","modern_context":["ethical leadership"]},
-{"source":"Bhagavad Gita","chapter":18,"verse":66,"translation":"Surrender and be free from sorrow.","theme":["trust"],"ethical_principle":"Let go of excessive control","modern_context":["life uncertainty"]}
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 2,
+    "verse": 47,
+    "translation": "You have the right to action, not to its fruits.",
+    "theme": [
+      "duty",
+      "detachment",
+      "karma"
+    ],
+    "ethical_principle": "Perform duty without attachment",
+    "modern_context": [
+      "career decisions",
+      "work stress"
+    ],
+    "sanskrit": "कर्मण्येवाधिकारस्ते मा फलेषु कदाचन। मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥",
+    "hindi_meaning": "तुम्हारा अधिकार केवल कर्म करने में है, उसके फलों में कभी नहीं। कर्मफल के हेतु मत बनो और न ही अकर्मण्यता में आसक्ति रखो।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 2,
+    "verse": 48,
+    "translation": "Be steadfast in yoga, abandoning attachment.",
+    "theme": [
+      "balance",
+      "detachment"
+    ],
+    "ethical_principle": "Maintain equanimity in success and failure",
+    "modern_context": [
+      "exam pressure",
+      "performance anxiety"
+    ],
+    "sanskrit": "योगस्थः कुरु कर्माणि सङ्गं त्यक्त्वा धनञ्जय। सिद्ध्यसिद्ध्योः समो भूत्वा समत्वं योग उच्यते॥",
+    "hindi_meaning": "हे धनंजय! आसक्ति को त्यागकर तथा सिद्धि और असिद्धि में समान भाव रखकर कर्म करो। यह समत्व भाव ही योग कहलाता है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 2,
+    "verse": 50,
+    "translation": "Yoga is skill in action.",
+    "theme": [
+      "excellence",
+      "focus"
+    ],
+    "ethical_principle": "Work with wisdom and efficiency",
+    "modern_context": [
+      "professional ethics"
+    ],
+    "sanskrit": "बुद्धियुक्तो जहातीह उभे सुकृतदुष्कृते। तस्माद्योगाय युज्यस्व योगः कर्मसु कौशलम्॥",
+    "hindi_meaning": "समबुद्धि युक्त मनुष्य इस जीवन में ही पुण्य और पाप दोनों का त्याग कर देता है। इसलिए योग में लगो, कर्मों में कुशलता ही योग है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 3,
+    "verse": 8,
+    "translation": "Perform your prescribed duty.",
+    "theme": [
+      "responsibility"
+    ],
+    "ethical_principle": "Action is superior to inaction",
+    "modern_context": [
+      "procrastination",
+      "career growth"
+    ],
+    "sanskrit": "नियतं कुरु कर्म त्वं कर्म ज्यायो ह्यकर्मणः। शरीरयात्रापि च ते न प्रसिद्ध्येदकर्मणः॥",
+    "hindi_meaning": "तुम अपने नियत कर्तव्य कर्म करो, क्योंकि कर्म न करने की अपेक्षा कर्म करना श्रेष्ठ है। अकर्म से शरीर का निर्वाह भी संभव नहीं है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 3,
+    "verse": 19,
+    "translation": "Work without attachment to attain the highest.",
+    "theme": [
+      "selfless action"
+    ],
+    "ethical_principle": "Selfless work leads to fulfillment",
+    "modern_context": [
+      "social work",
+      "leadership"
+    ],
+    "sanskrit": "तस्मादसक्तः सततं कार्यं कर्म समाचर। असक्तो ह्याचरन्कर्म परमाप्नोति पूरुषः॥",
+    "hindi_meaning": "निरंतर अनासक्त होकर कर्तव्य कर्म करते रहो। अनासक्त भाव से कर्म करता हुआ मनुष्य परम कल्याण को प्राप्त होता है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 3,
+    "verse": 21,
+    "translation": "Whatever the leader does, others follow.",
+    "theme": [
+      "leadership"
+    ],
+    "ethical_principle": "Leaders shape society",
+    "modern_context": [
+      "management",
+      "public roles"
+    ],
+    "sanskrit": "यद्यदाचरति श्रेष्ठस्तत्तदेवेतरो जनः। स यत्प्रमाणं कुरुते लोकस्तदनुवर्तते॥",
+    "hindi_meaning": "श्रेष्ठ पुरुष जैसा आचरण करते हैं, अन्य लोग भी वैसा ही अनुसरण करते हैं। वे जो आदर्श स्थापित करते हैं, समाज उसी का पालन करता है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 4,
+    "verse": 7,
+    "translation": "Whenever righteousness declines, I manifest.",
+    "theme": [
+      "justice",
+      "restoration"
+    ],
+    "ethical_principle": "Stand against injustice",
+    "modern_context": [
+      "activism",
+      "ethical leadership"
+    ],
+    "sanskrit": "यदा यदा हि धर्मस्य ग्लानिर्भवति भारत। अभ्युत्थानमधर्मस्य तदात्मानं सृजाम्यहम्॥",
+    "hindi_meaning": "हे भारत! जब-जब धर्म की हानि और अधर्म की वृद्धि होती है, तब-तब मैं धर्म की रक्षा के लिए अवतरित होता हूँ।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 4,
+    "verse": 18,
+    "translation": "See inaction in action and action in inaction.",
+    "theme": [
+      "wisdom"
+    ],
+    "ethical_principle": "Understand deeper intent of actions",
+    "modern_context": [
+      "complex decisions"
+    ],
+    "sanskrit": "कर्मण्यकर्म यः पश्येदकर्मणि च कर्म यः। स बुद्धिमान्मनुष्येषु स युक्तः कृत्स्नकर्मकृत्॥",
+    "hindi_meaning": "जो कर्म में अकर्म और अकर्म में कर्म देखता है, वही मनुष्यों में बुद्धिमान और सच्चा योगी है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 5,
+    "verse": 10,
+    "translation": "Offer actions to the divine and remain unattached.",
+    "theme": [
+      "detachment"
+    ],
+    "ethical_principle": "Detach ego from work",
+    "modern_context": [
+      "burnout",
+      "stress"
+    ],
+    "sanskrit": "ब्रह्मण्याधाय कर्माणि सङ्गं त्यक्त्वा करोति यः। लिप्यते न स पापेन पद्मपत्रमिवाम्भसा॥",
+    "hindi_meaning": "जो व्यक्ति सभी कर्म ईश्वर को समर्पित करके अनासक्त भाव से करता है, वह पाप से वैसे ही अछूता रहता है जैसे कमल का पत्ता जल से।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 6,
+    "verse": 5,
+    "translation": "Elevate yourself by your own mind.",
+    "theme": [
+      "self-discipline"
+    ],
+    "ethical_principle": "Self-mastery is essential",
+    "modern_context": [
+      "habits",
+      "mental health"
+    ],
+    "sanskrit": "उद्धरेदात्मनात्मानं नात्मानमवसादयेत्। आत्मैव ह्यात्मनो बन्धुरात्मैव रिपुरात्मनः॥",
+    "hindi_meaning": "मनुष्य को अपने मन द्वारा अपना उद्धार करना चाहिए, अपना पतन नहीं। मन ही मनुष्य का सच्चा मित्र है और मन ही उसका सबसे बड़ा शत्रु है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 6,
+    "verse": 6,
+    "translation": "Mind can be friend or enemy.",
+    "theme": [
+      "self-control"
+    ],
+    "ethical_principle": "Control the mind",
+    "modern_context": [
+      "addiction",
+      "focus"
+    ],
+    "sanskrit": "बन्धुरात्मात्मनस्तस्य येनात्मैवात्मना जितः। अनात्मनस्तु शत्रुत्वे वर्तेतात्मैव शत्रुवत्॥",
+    "hindi_meaning": "जिसने अपने मन को जीत लिया है, उसके लिए मन सबसे उत्तम मित्र है; किंतु जिसका मन वश में नहीं, उसके लिए मन शत्रु के समान व्यवहार करता है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 6,
+    "verse": 26,
+    "translation": "Bring the wandering mind under control.",
+    "theme": [
+      "discipline"
+    ],
+    "ethical_principle": "Practice mindfulness",
+    "modern_context": [
+      "meditation",
+      "anxiety"
+    ],
+    "sanskrit": "यतो यतो निश्चरति मनश्चञ्चलमस्थिरम्। ततस्ततो नियम्यैतदात्मन्येव वशं नयेत्॥",
+    "hindi_meaning": "यह चंचल और अस्थिर मन जहाँ-जहाँ भी भटके, वहाँ-वहाँ से इसे रोककर बार-बार आत्मा के नियंत्रण में लाना चाहिए।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 7,
+    "verse": 15,
+    "translation": "Deluded people do not seek truth.",
+    "theme": [
+      "ignorance"
+    ],
+    "ethical_principle": "Seek knowledge consciously",
+    "modern_context": [
+      "critical thinking"
+    ],
+    "sanskrit": "न मां दुष्कृतिनो मूढाः प्रपद्यन्ते नराधमाः। माययापहृतज्ञाना आसुरं भावमाश्रिताः॥",
+    "hindi_meaning": "माया से भ्रमित ज्ञान वाले और आसुरी स्वभाव वाले अज्ञानी मनुष्य ईश्वर की शरण में नहीं आते।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 9,
+    "verse": 22,
+    "translation": "I carry what they lack and preserve what they have.",
+    "theme": [
+      "faith"
+    ],
+    "ethical_principle": "Trust in righteous effort",
+    "modern_context": [
+      "uncertainty",
+      "risk"
+    ],
+    "sanskrit": "अनन्याश्चिन्तयन्तो मां ये जनाः पर्युपासते। तेषां नित्याभियुक्तानां योगक्षेमं वहाम्यहम्॥",
+    "hindi_meaning": "जो अनन्य भाव से मेरा चिंतन करते हुए कर्म करते हैं, उनके योग और क्षेम की चिंता मैं स्वयं करता हूँ।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 10,
+    "verse": 8,
+    "translation": "I am the source of all.",
+    "theme": [
+      "humility"
+    ],
+    "ethical_principle": "Remain humble",
+    "modern_context": [
+      "success management"
+    ],
+    "sanskrit": "अहं सर्वस्य प्रभवो मत्तः सर्वं प्रवर्तते। इति मत्वा भजन्ते मां बुधा भावसमन्विताः॥",
+    "hindi_meaning": "मैं समस्त जगत की उत्पत्ति का मूल कारण हूँ और सब कुछ मुझसे ही गतिमान होता है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 11,
+    "verse": 32,
+    "translation": "Time, the destroyer of worlds.",
+    "theme": [
+      "impermanence"
+    ],
+    "ethical_principle": "Accept change",
+    "modern_context": [
+      "loss",
+      "failure"
+    ],
+    "sanskrit": "कालोऽस्मि लोकक्षयकृत्प्रवृद्धो लोकान्समाहर्तुमिह प्रवृत्तः।",
+    "hindi_meaning": "मैं संसार का संहार करने वाला महाकाल हूँ और समय के साथ परिवर्तन और न्याय सुनिश्चित करता हूँ।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 12,
+    "verse": 15,
+    "translation": "One who does not disturb others is dear to me.",
+    "theme": [
+      "compassion"
+    ],
+    "ethical_principle": "Practice non-harm",
+    "modern_context": [
+      "relationships"
+    ],
+    "sanskrit": "यस्मान्नोद्विजते लोको लोकान्नोद्विजते च यः। हर्षामर्षभयोद्वेगैर्मुक्तो यः स च मे प्रियः॥",
+    "hindi_meaning": "जिससे किसी अन्य को कष्ट नहीं पहुँचता और जो दूसरों के आचरण से उद्विग्न नहीं होता, जो हर्ष, भय और चिंता से मुक्त है, वह प्रिय है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 12,
+    "verse": 16,
+    "translation": "Content and self-controlled devotee.",
+    "theme": [
+      "contentment"
+    ],
+    "ethical_principle": "Live simply",
+    "modern_context": [
+      "consumerism"
+    ],
+    "sanskrit": "अनपेक्षः शुचिर्दक्ष उदासीनो गतव्यथः। सर्वारम्भपरित्यागी यो मद्भक्तः स मे प्रियः॥",
+    "hindi_meaning": "जो आकांक्षा-रहित, पवित्र, चतुर, निष्पक्ष और व्यथा-मुक्त होकर कार्य करता है, वह अत्यंत प्रिय है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 13,
+    "verse": 8,
+    "translation": "Humility, non-violence, patience.",
+    "theme": [
+      "virtues"
+    ],
+    "ethical_principle": "Cultivate virtues",
+    "modern_context": [
+      "character building"
+    ],
+    "sanskrit": "अमानित्वमदम्भित्वमहिंसा क्षान्तिरार्जवम्। आचार्योपासनं शौचं स्थैर्यमात्मविनिग्रहः॥",
+    "hindi_meaning": "विनम्रता, दंभहीनता, अहिंसा, क्षमा, सरलता, ज्ञानियों का सम्मान, अंतःकरण की शुद्धि, स्थिरता और आत्मसंयम ही वास्तविक ज्ञान है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 14,
+    "verse": 5,
+    "translation": "Three gunas bind the soul.",
+    "theme": [
+      "self-awareness"
+    ],
+    "ethical_principle": "Understand inner tendencies",
+    "modern_context": [
+      "behavior analysis"
+    ],
+    "sanskrit": "सत्त्वं रजस्तम इति गुणाः प्रकृतिसम्भवाः। निबध्नन्ति महाबाहो देहे देहिनमव्ययम्॥",
+    "hindi_meaning": "प्रकृति से उत्पन्न सत्त्व, रज और तम—ये तीन गुण जीवात्मा को सांसारिक बंधनों में बांधते हैं।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 15,
+    "verse": 7,
+    "translation": "Living beings are fragments of the eternal.",
+    "theme": [
+      "unity"
+    ],
+    "ethical_principle": "Respect all life",
+    "modern_context": [
+      "inclusion"
+    ],
+    "sanskrit": "ममैवांशो जीवलोके जीवभूतः सनातनः। मनःषष्ठानीन्द्रियाणि प्रकृतिस्थानि कर्षति॥",
+    "hindi_meaning": "इस संसार में प्रत्येक जीवात्मा मेरा ही सनातन अंश है, जो मन और इंद्रियों के साथ संघर्ष करता है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 16,
+    "verse": 1,
+    "translation": "Fearlessness and purity lead to liberation.",
+    "theme": [
+      "courage"
+    ],
+    "ethical_principle": "Act with moral courage",
+    "modern_context": [
+      "whistleblowing"
+    ],
+    "sanskrit": "अभयं सत्त्वसंशुद्धिर्ज्ञानयोगव्यवस्थितिः। दानं दमश्च यज्ञश्च स्वाध्यायस्तप आर्जवम्॥",
+    "hindi_meaning": "निर्भयता, हृदय की पवित्रता, ज्ञान में स्थिरता, दान, आत्मसंयम और सरलता—ये दैवी गुण मनुष्य को महान बनाते हैं।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 16,
+    "verse": 21,
+    "translation": "Lust, anger, greed lead to ruin.",
+    "theme": [
+      "self-restraint"
+    ],
+    "ethical_principle": "Control destructive impulses",
+    "modern_context": [
+      "ethics violations"
+    ],
+    "sanskrit": "त्रिविधं नरकस्येदं द्वारं नाशनमात्मनः। कामः क्रोधस्तथा लोभस्तस्मादेतत्त्रयं त्यजेत्॥",
+    "hindi_meaning": "काम, क्रोध और लोभ—ये तीनों आत्मा का नाश करने वाले पतन के द्वार हैं, अतः इनका त्याग करना चाहिए।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 17,
+    "verse": 15,
+    "translation": "Speech should be truthful and beneficial.",
+    "theme": [
+      "communication"
+    ],
+    "ethical_principle": "Speak responsibly",
+    "modern_context": [
+      "social media"
+    ],
+    "sanskrit": "अनुद्वेगकरं वाक्यं सत्यं प्रियहितं च यत्। स्वाध्यायाभ्यसनं चैव वाङ्मयं तप उच्यते॥",
+    "hindi_meaning": "जो वाणी किसी को उद्विग्न न करे, जो सत्य, प्रिय और हितकारी हो, वही वाणी का वास्तविक तप है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 18,
+    "verse": 5,
+    "translation": "Sacrifice and charity should not be abandoned.",
+    "theme": [
+      "service"
+    ],
+    "ethical_principle": "Continue selfless acts",
+    "modern_context": [
+      "volunteering"
+    ],
+    "sanskrit": "यज्ञदानतपःकर्म न त्याज्यं कार्यमेव तत्। यज्ञो दानं तपश्चैव पावनानि मनीषिणाम्॥",
+    "hindi_meaning": "यज्ञ, दान और तप रूपी कर्तव्य कर्म कभी नहीं त्यागने चाहिए, क्योंकि वे अंतःकरण को शुद्ध करते हैं।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 18,
+    "verse": 14,
+    "translation": "Five causes of action.",
+    "theme": [
+      "accountability"
+    ],
+    "ethical_principle": "Acknowledge shared responsibility",
+    "modern_context": [
+      "team work"
+    ],
+    "sanskrit": "अधिष्ठानं तथा कर्ता करणं च पृथग्विधम्। विविधाश्च पृथक्चेष्टा दैवं चैवात्र पञ्चमम्॥",
+    "hindi_meaning": "किसी भी कर्म की सिद्धि में पाँच घटक होते हैं—शरीर, कर्ता, साधन, विभिन्न चेष्टाएं और भाग्य/परिस्थितियां।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 18,
+    "verse": 20,
+    "translation": "Wisdom sees unity in diversity.",
+    "theme": [
+      "wisdom"
+    ],
+    "ethical_principle": "Avoid discrimination",
+    "modern_context": [
+      "diversity inclusion"
+    ],
+    "sanskrit": "सर्वभूतेषु येनैकं भावमव्ययमीक्षते। अविभक्तं विभक्तेषु तज्ज्ञानं विद्धि सात्त्विकम्॥",
+    "hindi_meaning": "जिस ज्ञान से मनुष्य सभी प्राणियों में एक ही अविभाज्य आत्म-तत्व को देखता है, वही सात्त्विक ज्ञान है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 18,
+    "verse": 23,
+    "translation": "Detached action is sattvic.",
+    "theme": [
+      "pure action"
+    ],
+    "ethical_principle": "Work without ego",
+    "modern_context": [
+      "ethical leadership"
+    ],
+    "sanskrit": "नियतं सङ्गरहितमरागद्वेषतः कृतम्। अप्रेप्सुना फलं कर्म यत्तत्सात्त्विकमुच्यते॥",
+    "hindi_meaning": "जो कर्म बिना राग-द्वेष के, अनासक्त होकर और बिना फल की व्यग्रता के किया जाए, वही सात्त्विक कर्म है।"
+  },
+  {
+    "source": "Bhagavad Gita",
+    "chapter": 18,
+    "verse": 66,
+    "translation": "Surrender and be free from sorrow.",
+    "theme": [
+      "trust"
+    ],
+    "ethical_principle": "Let go of excessive control",
+    "modern_context": [
+      "life uncertainty"
+    ],
+    "sanskrit": "सर्वधर्मान्परित्यज्य मामेकं शरणं व्रज। अहं त्वां सर्वपापेभ्यो मोक्षयिष्यामि मा शुचः॥",
+    "hindi_meaning": "समस्त चिंताओं और बाहरी आग्रहों को छोड़कर सर्वोच्च धर्म की शरण लो; व्यर्थ शोक मत करो, उचित मार्ग प्राप्त होगा।"
+  }
 ]

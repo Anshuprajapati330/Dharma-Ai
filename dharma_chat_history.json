@@ -1,0 +1,21 @@
+{
+  "riya": [
+    {
+      "id": "282c3276-1212-46e7-9313-64d19a1e2cba",
+      "title": "How to stay calm",
+      "created_at": "2026-09-25T07:33:40.540413+00:00",
+      "updated_at": "2026-09-25T07:33:40.540413+00:00",
+      "messages": [
+        {
+          "role": "user",
+          "content": "how to stay calm"
+        },
+        {
+          "role": "assistant",
+          "content": "I encountered an error while processing your request.\n\nError: No module named 'dharma_engine'",
+          "mode": "Calm"
+        }
+      ]
+    }
+  ]
+}

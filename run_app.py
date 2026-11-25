@@ -15,9 +15,6 @@ def start_backend():
         [sys.executable, "-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", "8000"],
         cwd=str(ROOT),
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
     )
 
 
@@ -28,10 +25,8 @@ def start_frontend():
         [sys.executable, "-m", "streamlit", "run", "chatbot.py", "--server.port", "8501", "--server.headless", "true"],
         cwd=str(ROOT),
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
     )
+
 
 
 def main():

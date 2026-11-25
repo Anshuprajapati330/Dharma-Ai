@@ -1,86 +1,509 @@
 from __future__ import annotations
 
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
+import io
 import os
+import re
+import logging
+from collections import OrderedDict
+from concurrent.futures import Future
+from datetime import datetime, timezone
+from threading import Lock
+from time import perf_counter
+from typing import Literal
+
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
+from starlette.concurrency import run_in_threadpool
 
 from .auth import create_access_token, decode_access_token, hash_password, verify_password
 from .gateway import router as gateway_router
-from .models import Base, ChatMessage, ChatSession, User, engine
+from .models import ChatMessage, ChatSession, User, engine
+from voice_input import transcribe_audio_bytes
 
-Base.metadata.create_all(engine)
+logger = logging.getLogger(__name__)
+
+
+_TTS_CACHE_MAX_ENTRIES = 32
+_TTS_CACHE_MAX_BYTES = 16 * 1024 * 1024
+_TTS_SYNTHESIS_TIMEOUT_SECONDS = 90
+_tts_audio_cache: OrderedDict[tuple[str, str], bytes] = OrderedDict()
+_tts_audio_cache_bytes = 0
+_tts_audio_cache_lock = Lock()
+_tts_audio_inflight: dict[tuple[str, str], Future[bytes]] = {}
+
+
+def clear_tts_audio_cache() -> None:
+    global _tts_audio_cache_bytes
+    with _tts_audio_cache_lock:
+        _tts_audio_cache.clear()
+        _tts_audio_cache_bytes = 0
+
+
+def _synthesize_edge_tts(text: str, voice: str) -> bytes:
+    """Generate audio using one explicit Edge TTS voice."""
+    import asyncio
+    import edge_tts
+
+    async def generate_audio() -> bytes:
+        communicator = edge_tts.Communicate(text, voice)
+        audio = bytearray()
+
+        async for chunk in communicator.stream():
+            if chunk["type"] == "audio":
+                audio.extend(chunk["data"])
+
+        if not audio:
+            raise RuntimeError(
+                f"Edge TTS returned empty audio for {voice}"
+            )
+
+        return bytes(audio)
+
+    try:
+        return asyncio.run(
+            asyncio.wait_for(
+                generate_audio(),
+                timeout=_TTS_SYNTHESIS_TIMEOUT_SECONDS,
+            )
+        )
+    except TimeoutError as exc:
+        raise TimeoutError(
+            "Edge TTS synthesis exceeded "
+            f"{_TTS_SYNTHESIS_TIMEOUT_SECONDS} seconds."
+        ) from exc
+
+
+def generate_tts_audio_bytes(text: str, lang: str = "hi") -> bytes:
+    """Generate or reuse audio without duplicating concurrent same-text synthesis."""
+    global _tts_audio_cache_bytes
+    target_lang = "en" if lang == "en" else "hi"
+    selected_voice = {
+        "hi": "hi-IN-SwaraNeural",
+        "en": "en-US-AriaNeural",
+    }[target_lang]
+    cache_key = (text, target_lang)
+
+    with _tts_audio_cache_lock:
+        cached_audio = _tts_audio_cache.get(cache_key)
+        if cached_audio is not None:
+            _tts_audio_cache.move_to_end(cache_key)
+            logger.info(
+                "TTS cache hit language=%s voice=%s audio_bytes=%s",
+                target_lang,
+                selected_voice,
+                len(cached_audio),
+            )
+            return cached_audio
+
+        pending = _tts_audio_inflight.get(cache_key)
+        is_owner = pending is None
+        if is_owner:
+            pending = Future()
+            _tts_audio_inflight[cache_key] = pending
+
+    if not is_owner:
+        return pending.result()
+
+    synthesis_started = perf_counter()
+    try:
+        audio = _synthesize_edge_tts(text, selected_voice)
+        if not audio:
+            raise RuntimeError(f"Edge TTS returned empty audio for {selected_voice}")
+    except Exception as exc:
+        with _tts_audio_cache_lock:
+            _tts_audio_inflight.pop(cache_key, None)
+            pending.set_exception(exc)
+        logger.exception("Edge TTS failed for voice %s", selected_voice)
+        raise
+
+    with _tts_audio_cache_lock:
+        if len(audio) <= _TTS_CACHE_MAX_BYTES:
+            replaced_audio = _tts_audio_cache.pop(cache_key, None)
+            if replaced_audio is not None:
+                _tts_audio_cache_bytes -= len(replaced_audio)
+            _tts_audio_cache[cache_key] = audio
+            _tts_audio_cache_bytes += len(audio)
+            while (
+                len(_tts_audio_cache) > _TTS_CACHE_MAX_ENTRIES
+                or _tts_audio_cache_bytes > _TTS_CACHE_MAX_BYTES
+            ):
+                _, evicted_audio = _tts_audio_cache.popitem(last=False)
+                _tts_audio_cache_bytes -= len(evicted_audio)
+        pending.set_result(audio)
+        _tts_audio_inflight.pop(cache_key, None)
+
+    logger.info(
+        "TTS synthesized language=%s voice=%s elapsed_ms=%d audio_bytes=%s",
+        target_lang,
+        selected_voice,
+        round((perf_counter() - synthesis_started) * 1000),
+        len(audio),
+    )
+    return audio
+
+
+# @lru_cache(maxsize=128)
+# def generate_tts_audio_bytes(text: str, lang: str = "hi", voice: str | None = None) -> bytes:
+#     """Generate audio using Edge TTS first, then Azure TTS, then gTTS."""
+#     import os
+#     import io
+#     import logging
+#     import asyncio
+
+#     logger = logging.getLogger(__name__)
+
+#     # 1. Try Edge TTS first (internet connection required).
+#     try:
+#         import edge_tts
+
+#         selected_voice = voice or {
+#             "hi": "hi-IN-SwaraNeural",
+#             "en": "en-US-AriaNeural",
+#         }.get(lang, "hi-IN-SwaraNeural")
+
+#         async def generate_edge_audio():
+#             communicator = edge_tts.Communicate(text, selected_voice)
+#             audio = bytearray()
+
+#             async for chunk in communicator.stream():
+#                 if chunk["type"] == "audio":
+#                     audio.extend(chunk["data"])
+
+#             return bytes(audio)
+
+#         audio_data = asyncio.run(generate_edge_audio())
+
+#         if audio_data:
+#             return audio_data
+
+#         logger.warning("Edge TTS returned empty audio; trying fallback.")
+
+#     except Exception as exc:
+#         logger.warning("Edge TTS failed; trying Azure/gTTS fallback: %s", exc)
+
+#     # 2. Try Azure TTS if credentials are configured.
+#     azure_key = os.getenv("AZURE_SPEECH_KEY")
+#     azure_region = os.getenv("AZURE_SPEECH_REGION")
+
+#     if azure_key and azure_region:
+#         try:
+#             import azure.cognitiveservices.speech as speechsdk
+
+#             speech_config = speechsdk.SpeechConfig(
+#                 subscription=azure_key,
+#                 region=azure_region,
+#             )
+#             speech_config.speech_synthesis_voice_name = voice or {
+#                 "hi": "hi-IN-SwaraNeural",
+#                 "en": "en-US-AriaNeural",
+#             }.get(lang, "en-US-AriaNeural")
+
+#             speech_config.set_speech_synthesis_output_format(
+#                 speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
+#             )
+
+#             synthesizer = speechsdk.SpeechSynthesizer(
+#                 speech_config=speech_config,
+#                 audio_config=None,
+#             )
+#             result = synthesizer.speak_text_async(text).get()
+
+#             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+#                 return result.audio_data
+
+#             logger.warning("Azure TTS failed: %s", result.reason)
+
+#         except Exception as exc:
+#             logger.warning("Azure TTS error: %s", exc)
+
+#     # 3. Final fallback: gTTS.
+#     from gtts import gTTS
+
+#     buf = io.BytesIO()
+#     gTTS(text=text, lang=lang).write_to_fp(buf)
+#     return buf.getvalue()
+
+# @lru_cache(maxsize=128)
+# def generate_tts_audio_bytes(text: str, lang: str = "hi", voice: str | None = None) -> bytes:
+#     """Generate TTS audio bytes.
+
+#     Uses Azure Cognitive Services Speech SDK for neural Hindi (and English) voices
+#     when the ``AZURE_SPEECH_KEY`` and ``AZURE_SPEECH_REGION`` environment variables
+#     are present. Falls back to gTTS (the original implementation) if Azure
+#     credentials are missing or an error occurs.
+
+#     Parameters
+#     ----------
+#     text: str
+#         The text to synthesize.
+#     lang: str, default "hi"
+#         Language code – currently supports "hi" and "en".
+#     voice: str | None, optional
+#         Azure voice name (e.g. "hi-IN-SwaraNeural"). If ``None`` the default
+#         voice for the language is used (female for Hindi, male for English).
+#     """
+#     import os, io, logging
+#     logger = logging.getLogger(__name__)
+
+#     azure_key = os.getenv("AZURE_SPEECH_KEY")
+#     azure_region = os.getenv("AZURE_SPEECH_REGION")
+
+#     if azure_key and azure_region:
+#         try:
+#             import azure.cognitiveservices.speech as speechsdk
+#         except Exception as exc:
+#             logger.warning("Azure Speech SDK not installed, falling back to gTTS: %s", exc)
+#             azure_key = None
+
+#     if azure_key and azure_region:
+#         speech_config = speechsdk.SpeechConfig(subscription=azure_key, region=azure_region)
+#         if voice:
+#             speech_config.speech_synthesis_voice_name = voice
+#         else:
+#             default_voice = {"hi": "hi-IN-SwaraNeural", "en": "en-US-AriaNeural"}.get(lang, "en-US-AriaNeural")
+#             speech_config.speech_synthesis_voice_name = default_voice
+#         speech_config.set_speech_synthesis_output_format(
+#             speechsdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3
+#         )
+#         synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
+#         result = synthesizer.speak_text_async(text).get()
+#         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+#             return result.audio_data
+#         else:
+#             logger.error("Azure TTS failed: %s", result.reason)
+
+#     # Fallback to gTTS
+#     from gtts import gTTS
+#     buf = io.BytesIO()
+#     tts = gTTS(text=text, lang=lang)
+#     tts.write_to_fp(buf)
+#     return buf.getvalue()
 
 app = FastAPI(title="Dharma AI API", version="1.0.0")
-allowed_origins = [
-    origin.strip()
-    for origin in os.getenv("CORS_ORIGINS", "http://localhost:8501").split(",")
-    if origin.strip()
-]
+raw_origins = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:8501,http://127.0.0.1:8501",
+)
+allowed_origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=bool(allowed_origins),
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-TTS-Voice", "X-TTS-Language"],
 )
 app.include_router(gateway_router)
-
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, max_length=128)
-
+    language_preference: str = "en"
 
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, max_length=128)
 
+class LanguageRequest(BaseModel):
+    language: str = Field(..., min_length=2, max_length=10)
 
 class MessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     assistant_response: str = Field(..., min_length=1, max_length=10000)
     mode: str = "Calm"
+    chat_id: int | None = None
+    replace_last_response: bool = False
 
+def generate_chat_title(text: str) -> str:
+    cleaned = re.sub(r"\s+", " ", str(text or "")).strip()
+    cleaned = re.sub(
+        r"^(please|can you|could you|tell me|i want to know|i need help with|how do i|what is|what are|what does the gita say about|what does dharma say about)\s+",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    ).strip()
+    if not cleaned:
+        return "New Conversation"
+    words = cleaned.split()
+    shortened = " ".join(words[:6])
+    if len(shortened) > 42:
+        shortened = shortened[:39].rstrip() + "..."
+    return shortened[0].upper() + shortened[1:] if shortened else "New Conversation"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
 
 def current_user(token: str = Depends(oauth2_scheme)) -> User:
     try:
         payload = decode_access_token(token)
     except Exception as exc:
         raise HTTPException(status_code=401, detail="Invalid token") from exc
-
     username = payload.get("sub")
     if not username:
         raise HTTPException(status_code=401, detail="Invalid token")
-
     with Session(engine) as session:
         user = session.query(User).filter(User.username == username).first()
         if not user:
             raise HTTPException(status_code=401, detail="User no longer exists")
         return user
 
-
 @app.get("/health")
 def health_check():
     return {"status": "ok", "service": "dharma-ai-api"}
 
+class TranslateRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=10000)
+    target_language: Literal["en", "hi"] = "hi"
+
+class TTSRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=3000)
+    lang: Literal["en", "hi"] = "hi"
+
+@app.post("/api/translate")
+async def api_translate(request: TranslateRequest):
+    try:
+        from dharma_ai import translate_text
+        translated = await run_in_threadpool(translate_text, request.text, request.target_language)
+        return {"translated": translated}
+    except Exception as exc:
+        logger.exception("Translation request failed")
+        raise HTTPException(status_code=502, detail=f"Translation failed: {exc}") from exc
+
+async def _voice_text_to_speech(text: str, lang: Literal["en", "hi"]):
+    request_started = perf_counter()
+    if not text or not text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    clean_text = re.sub(r"```[\s\S]*?```", " ", text)
+    clean_text = re.sub(r"!\[([^\]]*)\]\([^)]*\)", r"\1", clean_text)
+    clean_text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", clean_text)
+    clean_text = re.sub(r"[*#_~`>]", "", clean_text)
+    clean_text = re.sub(r"^\s*[-?*]\s*", "", clean_text, flags=re.MULTILINE)
+    clean_text = re.sub(r"\s+", " ", clean_text).strip()
+
+    if not clean_text:
+        raise HTTPException(status_code=400, detail="No readable text to speak")
+
+    target_lang = "hi" if lang == "hi" else "en"
+    selected_voice = {
+        "hi": "hi-IN-SwaraNeural",
+        "en": "en-US-AriaNeural",
+    }[target_lang]
+    if len(clean_text) > 3000:
+        raise HTTPException(
+            status_code=413,
+            detail="Text is too long for speech synthesis (maximum 3000 characters)",
+        )
+
+    try:
+        audio_data = await run_in_threadpool(
+            generate_tts_audio_bytes, clean_text, target_lang
+        )
+        if not audio_data:
+            raise RuntimeError("Edge TTS returned empty audio")
+    except Exception as exc:
+        logger.exception("Edge TTS generation failed for voice %s", selected_voice)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Edge TTS failed for {selected_voice}: {exc}",
+        ) from exc
+
+    logger.info(
+        "TTS request completed language=%s voice=%s elapsed_ms=%d audio_bytes=%s",
+        target_lang,
+        selected_voice,
+        round((perf_counter() - request_started) * 1000),
+        len(audio_data),
+    )
+    return StreamingResponse(
+        io.BytesIO(audio_data),
+        media_type="audio/mpeg",
+        headers={
+            "Cache-Control": "no-store",
+            "X-TTS-Language": target_lang,
+            "X-TTS-Voice": selected_voice,
+            "Content-Disposition": "inline; filename=speech.mp3",
+        },
+    )
+
+@app.get("/voice/tts")
+async def voice_text_to_speech(
+    text: str,
+    lang: Literal["en", "hi"] = "hi",
+):
+    return await _voice_text_to_speech(text, lang)
+
+@app.post("/voice/tts")
+async def voice_text_to_speech_post(request: TTSRequest):
+    return await _voice_text_to_speech(request.text, request.lang)
+
+@app.post("/voice/transcribe")
+async def transcribe_voice(
+    request: Request,
+    language: Literal["en", "hi"] = "en",
+    user: User = Depends(current_user),
+):
+    mime_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if mime_type not in {"audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav", "audio/webm", "audio/x-wav"}:
+        raise HTTPException(status_code=415, detail="Unsupported audio format")
+
+    max_audio_bytes = 15 * 1024 * 1024
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > max_audio_bytes:
+                raise HTTPException(status_code=413, detail="Audio recording is too large")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid content length") from exc
+
+    audio = bytearray()
+    async for chunk in request.stream():
+        audio.extend(chunk)
+        if len(audio) > max_audio_bytes:
+            raise HTTPException(status_code=413, detail="Audio recording is too large")
+    audio_bytes = bytes(audio)
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Audio recording is empty")
+    if not os.getenv("GROQ_API_KEY"):
+        raise HTTPException(
+            status_code=503,
+            detail="Voice transcription is not configured. Set GROQ_API_KEY on the backend.",
+        )
+    try:
+        transcript = await run_in_threadpool(
+            transcribe_audio_bytes,
+            audio_bytes,
+            language,
+            mime_type,
+        )
+    except Exception as exc:
+        logger.exception("Voice transcription failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Voice transcription failed. Check backend connectivity and try again.",
+        ) from exc
+    if not transcript:
+        raise HTTPException(
+            status_code=502,
+            detail="No speech was recognized. Try speaking more clearly and record again.",
+        )
+    return {"transcript": transcript}
 
 @app.post("/auth/register")
 def register(request: RegisterRequest):
     username = request.username.strip().lower()
+    lang = "hi" if request.language_preference.lower().startswith("hi") else "en"
     with Session(engine) as session:
         existing = session.query(User).filter(User.username == username).first()
         if existing:
             raise HTTPException(status_code=400, detail="User already exists")
-
         user = User(
             username=username,
             password_hash=hash_password(request.password),
+            language_preference=lang,
         )
         session.add(user)
         session.commit()
@@ -88,11 +511,11 @@ def register(request: RegisterRequest):
         return {
             "id": user.id,
             "username": user.username,
-            "created_at": user.created_at.isoformat(),
+            "language_preference": user.language_preference,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
             "access_token": create_access_token({"sub": user.username}),
             "token_type": "bearer",
         }
-
 
 @app.post("/auth/login")
 def login(request: LoginRequest):
@@ -101,45 +524,113 @@ def login(request: LoginRequest):
         user = session.query(User).filter(User.username == username).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-
         if not user.password_hash or not verify_password(request.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid password")
-
         return {
             "id": user.id,
             "username": user.username,
+            "language_preference": getattr(user, "language_preference", "en") or "en",
             "access_token": create_access_token({"sub": user.username}),
             "token_type": "bearer",
         }
 
+@app.get("/user/profile")
+def get_user_profile(user: User = Depends(current_user)):
+    return {
+        "id": user.id,
+        "username": user.username,
+        "language_preference": getattr(user, "language_preference", "en") or "en",
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
+
+@app.put("/user/language")
+def update_user_language(request: LanguageRequest, user: User = Depends(current_user)):
+    lang = "hi" if request.language.lower().startswith("hi") else "en"
+    with Session(engine) as session:
+        db_user = session.query(User).filter(User.id == user.id).first()
+        if db_user:
+            db_user.language_preference = lang
+            session.commit()
+    return {"status": "ok", "language_preference": lang}
 
 @app.post("/chat")
 def save_chat(request: MessageRequest, user: User = Depends(current_user)):
     with Session(engine) as session:
-        chat = session.query(ChatSession).filter(ChatSession.user_id == user.id).order_by(ChatSession.updated_at.desc()).first()
+        chat = None
+        if request.chat_id is not None:
+            chat = (
+                session.query(ChatSession)
+                .filter(ChatSession.id == request.chat_id, ChatSession.user_id == user.id)
+                .first()
+            )
+        if request.replace_last_response:
+            if not chat:
+                raise HTTPException(status_code=409, detail="The chat to regenerate no longer exists")
+            latest_messages = (
+                session.query(ChatMessage)
+                .filter(ChatMessage.session_id == chat.id)
+                .order_by(ChatMessage.id.desc())
+                .limit(2)
+                .all()
+            )
+            if (
+                len(latest_messages) != 2
+                or latest_messages[0].role != "assistant"
+                or latest_messages[1].role != "user"
+                or latest_messages[1].content != request.message
+            ):
+                raise HTTPException(status_code=409, detail="The latest chat response could not be replaced")
+            latest_messages[0].content = request.assistant_response
+            chat.updated_at = datetime.now(timezone.utc)
+            session.commit()
+            return {"status": "saved", "session_id": chat.id, "title": chat.title}
         if not chat:
-            chat = ChatSession(user_id=user.id, title="New conversation")
+            title = generate_chat_title(request.message)
+            chat = ChatSession(user_id=user.id, title=title)
             session.add(chat)
             session.flush()
-
+        elif not chat.title or chat.title in ("New conversation", "New Chat", "New Conversation"):
+            chat.title = generate_chat_title(request.message)
         session.add(ChatMessage(session_id=chat.id, role="user", content=request.message))
         session.add(ChatMessage(session_id=chat.id, role="assistant", content=request.assistant_response))
         session.commit()
+        return {"status": "saved", "session_id": chat.id, "title": chat.title}
 
-        return {"status": "saved", "session_id": chat.id}
+@app.delete("/chat/history")
+def clear_all_history(user: User = Depends(current_user)):
+    with Session(engine) as session:
+        chats = session.query(ChatSession).filter(ChatSession.user_id == user.id).all()
+        for chat in chats:
+            session.delete(chat)
+        session.commit()
+        return {"status": "cleared"}
 
+@app.delete("/chat/{chat_id}")
+def delete_single_chat(chat_id: int, user: User = Depends(current_user)):
+    with Session(engine) as session:
+        chat = (
+            session.query(ChatSession)
+            .filter(ChatSession.id == chat_id, ChatSession.user_id == user.id)
+            .first()
+        )
+        if not chat:
+            raise HTTPException(status_code=404, detail="Chat not found")
+        session.delete(chat)
+        session.commit()
+        return {"status": "deleted", "id": chat_id}
 
 @app.get("/chat/history")
 def chat_history(user: User = Depends(current_user)):
     with Session(engine) as session:
-        chats = session.query(ChatSession).filter(ChatSession.user_id == user.id).order_by(ChatSession.updated_at.desc()).all()
+        chats = session.query(ChatSession).options(selectinload(ChatSession.messages)).filter(ChatSession.user_id == user.id).order_by(ChatSession.updated_at.desc()).all()
         return [
             {
                 "id": chat.id,
                 "title": chat.title,
+                "updated_at": chat.updated_at.isoformat() if chat.updated_at else None,
                 "messages": [
                     {"role": message.role, "content": message.content}
-                    for message in sorted(chat.messages, key=lambda m: m.created_at)
+                    for message in sorted(chat.messages, key=lambda m: m.id)
                 ],
             }
             for chat in chats

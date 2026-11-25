@@ -16,3 +16,5 @@ passlib[bcrypt]
 bcrypt==4.1.2
 psycopg2-binary
 alembic
+gTTS>=2.5.0
+edge-tts

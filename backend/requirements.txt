@@ -2,3 +2,5 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 requests
+gTTS>=2.5.0
+azure-cognitiveservices-speech

@@ -21,7 +21,15 @@ def register(form: OAuth2PasswordRequestForm = Depends()):
         session.commit()
         session.refresh(user)
         token = create_access_token({"sub": user.username})
-        return {"access_token": token, "token_type": "bearer", "user": {"id": user.id, "username": user.username}}
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "language_preference": getattr(user, "language_preference", "en") or "en",
+            },
+        }
 
 
 @router.post("/login")
@@ -32,7 +40,15 @@ def login(form: OAuth2PasswordRequestForm = Depends()):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
         token = create_access_token({"sub": user.username})
-        return {"access_token": token, "token_type": "bearer", "user": {"id": user.id, "username": user.username}}
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "language_preference": getattr(user, "language_preference", "en") or "en",
+            },
+        }
 
 
 @router.get("/me")
@@ -46,4 +62,13 @@ def me(token: str = Depends(oauth2_scheme)):
     if not username:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    return {"username": username}
+    with Session(engine) as session:
+        user = session.query(User).filter(User.username == username).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {
+            "id": user.id,
+            "username": user.username,
+            "language_preference": getattr(user, "language_preference", "en") or "en",
+        }
+
